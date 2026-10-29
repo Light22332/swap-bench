@@ -19,7 +19,7 @@ import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HOST = "http://127.0.0.1:8770"
-SAMPLES = os.path.join(ROOT, "samples")
+SAMPLES = os.path.join(ROOT, "bench")
 
 PAIRS = [
     ("case1_person.jpg", "case1_garment.jpg"),
@@ -52,8 +52,8 @@ def wait_job(jid, timeout=1200):
 
 
 def one_pair(person, garment):
-    rel_person = os.path.join("samples", person).replace("\\", "/")
-    rel_garment = os.path.join("samples", garment).replace("\\", "/")
+    rel_person = os.path.join("bench", person).replace("\\", "/")
+    rel_garment = os.path.join("bench", garment).replace("\\", "/")
     data = call("/api/run", {"person": rel_person,
                              "garments": [{"path": rel_garment, "name": garment}]})
     job = wait_job(data["job_id"])

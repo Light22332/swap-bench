@@ -1,0 +1,23 @@
+name: check
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # 只装判定和单测用得上的三样。torch / transformers 不给：人像解析是懒加载的，
+      # 这些检查碰不到它。模型文件（约 157MB）不进仓库，所以判定冒烟那一步用 --fast 跳过。
+      - name: 装依赖
+        run: pip install pillow numpy opencv-python-headless
+
+      - name: 跑检查
+        run: python tools/check.py --fast

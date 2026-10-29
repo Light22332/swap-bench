@@ -1,5 +1,7 @@
 # 换装验收台 · Swap Bench
 
+[![check](https://github.com/Light22332/swap-bench/actions/workflows/check.yml/badge.svg)](https://github.com/Light22332/swap-bench/actions/workflows/check.yml)
+
 给一张人像和一件衣服，把衣服换到人身上；换完之后**自己验收**，不合格的自动返工，最后从所有尝试里挑最好的那张。全部跑在本地。
 
 > **Swap Bench** is a local garment-swap pipeline that checks its own output.
@@ -164,7 +166,7 @@
 判定门槛：固定比例框切掉的衣服像素 ≤5% 时，说明这是标准商品图排版，用它；否则用衣服框。
 解析一次 0.4–0.6 秒（CPU）。
 
-八组固定输入的回归基线（`tools/regression.py`，2026-10-29，`reports/base.json`）：
+八组固定输入的回归基线（`tools/regression.py`，2026-10-29，`reports/base.json`；输入在 `bench/`，不随仓库分发）：
 
 | 指标 | 值 |
 |---|---|
@@ -288,7 +290,7 @@ python run.py
 
 - 想一次换好几件：第 2 步可以一次放多张，每件出一张图
 - 想直接看效果：点「没图？载入示例看看」，或者打开 `http://127.0.0.1:8770/?demo`
-  （示例图不进版本库，见 `samples/README.md`）
+  （八张示例图随仓库带，都是本地模型生成的，见 `samples/README.md`）
 - 看一次已经跑完的历史任务（结果从 JSONL 还原，服务重启也不失效）：
 
 ```
@@ -299,8 +301,8 @@ http://127.0.0.1:8770/?job=6e8f778cfcbb
 
 ```bash
 python tools/run_batch.py \
-  --person samples/case1_person.jpg \
-  --garments samples/case1_garment.jpg samples/case3_garment.jpg
+  --person samples/demo_person_a.jpg \
+  --garments samples/demo_garment_1.jpg samples/demo_garment_2.jpg
 ```
 
 ---
@@ -355,6 +357,8 @@ electron/
   main.js             桌面外壳：起服务 → 开窗口 → 退出收尾
 web/                  index.html + css/ 六个文件 + js/ 六个原生 ES 模块，无框架、无构建
 models/               人脸两个 onnx + 手部两个 onnx + segformer_b2_clothes/（都不进版本库）
+samples/              八张示例图，随仓库分发（本地模型生成）
+bench/                回归用的八组固定输入（不进版本库，见 bench/README.md）
 tools/                check.py（一键检查）、replay.py（历史回放）、api_baseline.py（接口形状对比）、warmup.py（预热）、run_batch.py（命令行批量）
 runs/                 每次任务的 JSONL 检验单
 启动换装台.exe        双击启动（无黑窗口）
@@ -368,7 +372,7 @@ runs/                 每次任务的 JSONL 检验单
 
 - **手只数得清"在不在"。** 手指粘连、指节畸形这类结构问题看不出来。手被身体挡住、戴手套、手不在画面里时，原图就检不出手，这一项返回 null，不算通过也不算失败。
 - **参考图裁剪只能切矩形。** 人脸、手、水印都散在衣服四周时，矩形框裁不干净；衣服贴着画面四边时（贴边特写），框约等于全图，等于没裁。要更干净得做抠图（把非衣服像素涂掉），不是现在的做法。
-- **人像解析模型只许非商业使用**（NVIDIA Source Code License）。自己用和放作品集没问题，商用要换 rembg 的 `u2net_cloth_seg`（MIT），换的是 `app/parse_clothes.py` 里的推理后端。
+- **人像解析模型只许非商业使用**（NVIDIA Source Code License）。自己用和放作品集没问题，商用要换 rembg 的 `u2net_cloth_seg`（MIT），换的是 `app/capability/prep/parse_clothes.py` 里的推理后端。
 - **文字水印不自动检查。** 本地没有能判这项的可信方法，页面会提示"需人看一眼"。
 - **背景检查只对纯色/简洁背景有效。** 背景太杂时取不到背景主色，这一项返回 null，不计入判定。
 - **人像里必须有一张能检测到的脸**，否则"脸没变"这一项无法比对，退化为 3 项判定。

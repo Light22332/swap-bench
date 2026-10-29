@@ -1,0 +1,13 @@
+# 单独建环境时才需要装这些。
+#
+# 如果直接用 ComfyUI 那个 python（README 里的 D:\Comfyui\python\python.exe），
+# 这个文件整份都不用装——Pillow / numpy / cv2 / torch / transformers 那个环境里都有。
+#
+# 单独建环境的话，torch 装 CPU 版就够：人脸比对、手部检测、人像解析都不吃 GPU，
+# GPU 只给 ComfyUI 的生成用。版本下限是本机实测跑通的版本，不是上限。
+
+Pillow>=10.0
+numpy>=1.26
+opencv-python>=4.8
+torch>=2.2
+transformers>=4.40

@@ -59,7 +59,7 @@ foreach ($f in "config.json","preprocessor_config.json","model.safetensors") {
 **协议**：模型来自 [mattmdjaga/segformer_b2_clothes](https://huggingface.co/mattmdjaga/segformer_b2_clothes)，
 SegFormer-B2 在 ATR 人像解析集上微调，基座是 NVlabs/SegFormer，**权重沿用 NVIDIA Source Code License
 （仅限非商业用途）**。自己用、放作品集没问题；要商用就换 rembg 的 `u2net_cloth_seg`（MIT），
-`app/parse_clothes.py` 换个推理后端即可，接口不用动。
+`app/capability/prep/parse_clothes.py` 换个推理后端即可，接口不用动。
 
 ## 缺文件时会怎样
 

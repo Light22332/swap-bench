@@ -16,8 +16,8 @@ MAX_BYTES = 30 * 1024 * 1024
 SAFE = re.compile(r"[^A-Za-z0-9_.\-]")
 
 SAMPLES = {
-    "person": "case1_person.jpg",
-    "garments": ["case1_garment.jpg", "case3_garment.jpg"],
+    "person": "demo_person_a.jpg",
+    "garments": ["demo_garment_1.jpg", "demo_garment_2.jpg"],
 }
 
 

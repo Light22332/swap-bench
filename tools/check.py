@@ -60,7 +60,7 @@ def step_smoke():
     print("判定冒烟")
     from app.capability.judge import make_judge
     judge = make_judge({"models_dir": os.path.join(ROOT, "models")})
-    person = os.path.join(ROOT, "samples", "case1_person.jpg")
+    person = os.path.join(ROOT, "samples", "demo_person_a.jpg")
     results = sorted(glob.glob(os.path.join(ROOT, "outputs", "*.png")))
     if not os.path.isfile(person):
         report("判定冒烟", True, "没有 samples 目录，跳过")

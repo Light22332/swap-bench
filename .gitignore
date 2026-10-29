@@ -6,8 +6,9 @@ logs/
 dist/
 uploads/
 runs/
-samples/*
-!samples/README.md
+samples/_raw/
+bench/*
+!bench/README.md
 models/*.onnx
 models/segformer_b2_clothes/
 outputs/**
