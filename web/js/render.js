@@ -123,6 +123,9 @@ function renderSheet() {
     cell.setAttribute('aria-label',
       `第 ${c.index} 件 ${c.garment || ''}，${text}`);
 
+    const frame = document.createElement('span');
+    frame.className = 'cell-frame';
+
     let thumb = null;
     if (gen && gen.image_url) {
       const img = document.createElement('img');
@@ -131,29 +134,37 @@ function renderSheet() {
       img.alt = `第 ${c.index} 件的换装结果`;
       img.width = 768;
       img.height = 1344;
-      cell.append(img);
+      frame.append(img);
       thumb = img;
     } else {
       const v = document.createElement('span');
       v.className = 'cell-void';
-      v.textContent = c.state === 'pending' ? '排队' : '正在换';
-      cell.append(v);
+      v.textContent = c.state === 'pending' ? '排队'
+        : c.state === 'cancelled' ? '没跑' : '正在换';
+      frame.append(v);
     }
 
-    const cap = document.createElement('span');
-    cap.className = 'cell-cap';
-    const idx = document.createElement('b');
-    idx.textContent = String(c.index).padStart(2, '0');
-    const nm = document.createElement('span');
-    nm.textContent = c.garment || '';
-    cap.append(idx, nm);
-    cell.append(cap);
+    const no = document.createElement('span');
+    no.className = 'cell-no';
+    no.textContent = String(c.index).padStart(2, '0');
+    frame.append(no);
 
     const st = document.createElement('span');
     st.className = 'stamp ' + cls + (c.state === 'passed' ? ' landed' : '');
     st.textContent = text;
     st.setAttribute('aria-hidden', 'true');
-    cell.append(st);
+    frame.append(st);
+
+    const cap = document.createElement('span');
+    cap.className = 'cell-cap';
+    const nm = document.createElement('b');
+    nm.textContent = c.garment || '';
+    const meta = document.createElement('span');
+    meta.className = 'cell-meta';
+    meta.textContent = metaText(c, gen);
+    cap.append(nm, meta);
+
+    cell.append(frame, cap);
 
     if (thumb && S.personUrl) {
       holdToCompare(cell, thumb);
@@ -250,6 +261,15 @@ function renderMetrics() {
   $('m-total').textContent = m.total_generate_s ? m.total_generate_s + 's' : '—';
 }
 
+
+/** 格子底线上的那行小字：这张花了多久、试了几次。 */
+function metaText(c, gen) {
+  const bits = [];
+  if (gen && gen.latency_s) bits.push(Math.round(gen.latency_s) + 's');
+  if (c.attempts_used) bits.push(c.attempts_used + ' 次');
+  if (bits.length) return bits.join(' · ');
+  return c.state === 'running' ? '生成中…' : '';
+}
 
 /** 按住格子换成原片，松开换回来。按下先等 120ms，避免普通点击闪一下。 */
 function holdToCompare(cell, img) {

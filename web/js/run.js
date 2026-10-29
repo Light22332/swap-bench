@@ -122,4 +122,10 @@ function finishRun(job) {
   }
   $('rerun').hidden = S.cases.length === 0;
   render();
+  // 跑完把最好那张的检验单直接摊开，别让人对着空地发愣
+  if (job && S.cases.length && !S.selected) {
+    const best = S.cases.find((c) => c.passed) || S.cases[0];
+    S.selected = best.index;
+    render();
+  }
 }

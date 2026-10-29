@@ -75,7 +75,7 @@
   cursor: pointer;
 }
 
-.ledger-row:hover { background: #EFEEEB; }
+.ledger-row:hover { background: rgba(255, 255, 255, 0.42); }
 .ledger-row:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
 
 .ledger-when {

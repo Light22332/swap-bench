@@ -2,22 +2,22 @@
 
 /* 换装验收台
    视觉比喻：摄影棚的看片台。
-   亮灰亚克力台面 + 墨线 + 红蜡笔盖章。零圆角、零阴影、图与图之间只有发丝线。
+   纸面台面 + 墨蓝线 + 红蜡笔盖章。零圆角、零阴影、图与图之间只有发丝线。
 
    颜色只有六个，其余全是它的透明度变体。
 */
 
 :root {
-  --table: #E7E6E2;
-  --ink:   #16181A;
-  --ash:   #8A8F94;
-  --seal:  #A6232A;
-  --pass:  #2F5D4F;
-  --rework:#B07D2B;
+  --table: #EDE9E1;
+  --ink:   #1B2A33;
+  --ash:   #566670;
+  --seal:  #B4472E;
+  --pass:  #3F6B57;
+  --rework:#A8702A;
 
-  --line:  rgba(22, 24, 26, 0.14);
-  --rule:  rgba(22, 24, 26, 0.42);
-  --veil:  rgba(231, 230, 226, 0.86);
+  --line:  rgba(27, 42, 51, 0.14);
+  --rule:  rgba(27, 42, 51, 0.42);
+  --veil:  rgba(237, 233, 225, 0.86);
 
   --sans: "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", sans-serif;
   --num:  Bahnschrift, "DIN Alternate", "Segoe UI", sans-serif;

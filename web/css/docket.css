@@ -4,8 +4,8 @@
 
 .stamp {
   position: absolute;
-  right: 14px;
-  bottom: 44px;
+  right: 10px;
+  bottom: 10px;
   transform: rotate(-6deg);
   transform-origin: center;
   font-family: var(--sans);
@@ -14,7 +14,7 @@
   letter-spacing: 0.12em;
   padding: 3px 8px 2px;
   border: 2px solid currentColor;
-  background: rgba(247, 246, 243, 0.86);
+  background: rgba(237, 233, 225, 0.86);
   color: var(--ash);
   opacity: 0.95;
   pointer-events: none;
@@ -175,7 +175,7 @@
 
 .metric-v {
   font-family: var(--num);
-  font-size: 19px;
+  font-size: 22px;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }

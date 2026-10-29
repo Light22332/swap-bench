@@ -2,19 +2,19 @@
   <title id="t">换装验收台的四个包：单向依赖，判定在 capability 层</title>
 
   <style>
-    .bg { fill: #e7e6e2; }
-    .box { fill: #f7f6f3; stroke: #b9b6ad; stroke-width: 1; }
-    .box-hi { fill: #ffffff; stroke: #1f1f1f; stroke-width: 1.4; }
-    .ttl { font: 600 15px "Microsoft YaHei", "PingFang SC", system-ui, sans-serif; fill: #1f1f1f; }
-    .sub { font: 12px "Microsoft YaHei", "PingFang SC", system-ui, sans-serif; fill: #6b6862; }
-    .num { font: 600 13px ui-monospace, "Cascadia Mono", Consolas, monospace; fill: #1f1f1f; }
-    .lbl { font: 11.5px "Microsoft YaHei", "PingFang SC", system-ui, sans-serif; fill: #6b6862; }
-    .arrow { stroke: #8a867d; stroke-width: 1.2; fill: none; }
-    .h { font: 600 16px "Microsoft YaHei", "PingFang SC", system-ui, sans-serif; fill: #1f1f1f; }
-    .k { font: 600 12.5px ui-monospace, "Cascadia Mono", Consolas, monospace; fill: #1f1f1f; }
-    .v { font: 12px ui-monospace, "Cascadia Mono", Consolas, monospace; fill: #6b6862; }
-    .ok { fill: #2f6b45; }
-    .rule { stroke: #c9c6bd; stroke-width: 1; }
+    .bg { fill: #ede9e1; }
+    .box { fill: #f7f4ee; stroke: #bab5a9; stroke-width: 1; }
+    .box-hi { fill: #fdfbf6; stroke: #1b2a33; stroke-width: 1.4; }
+    .ttl { font: 600 15px "Microsoft YaHei", "PingFang SC", system-ui, sans-serif; fill: #1b2a33; }
+    .sub { font: 12px "Microsoft YaHei", "PingFang SC", system-ui, sans-serif; fill: #566670; }
+    .num { font: 600 13px ui-monospace, "Cascadia Mono", Consolas, monospace; fill: #1b2a33; }
+    .lbl { font: 11.5px "Microsoft YaHei", "PingFang SC", system-ui, sans-serif; fill: #566670; }
+    .arrow { stroke: #8a8579; stroke-width: 1.2; fill: none; }
+    .h { font: 600 16px "Microsoft YaHei", "PingFang SC", system-ui, sans-serif; fill: #1b2a33; }
+    .k { font: 600 12.5px ui-monospace, "Cascadia Mono", Consolas, monospace; fill: #1b2a33; }
+    .v { font: 12px ui-monospace, "Cascadia Mono", Consolas, monospace; fill: #566670; }
+    .ok { fill: #3f6b57; }
+    .rule { stroke: #cbc6b9; stroke-width: 1; }
   </style>
 
   <rect class="bg" x="0" y="0" width="1040" height="700"/>

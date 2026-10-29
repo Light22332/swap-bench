@@ -93,12 +93,13 @@
 .sheet {
   flex: 0 0 auto;
   display: grid;
-  grid-template-columns: repeat(auto-fit, 208px);
+  grid-template-columns: repeat(auto-fit, minmax(250px, 400px));
+  justify-content: start;
   align-content: start;
   gap: 1px;
   background: var(--line);
   border-bottom: 1px solid var(--rule);
-  width: max-content;
+  width: auto;
   max-width: 100%;
   min-height: 240px;
 }
@@ -136,15 +137,38 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.cell:hover { background: #EFEEEB; }
+.cell:hover { background: rgba(255, 255, 255, 0.42); }
 .cell:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+
+/* 每一格：图 + 左下角编号，底下一行虚线撕口 */
+
+.cell-frame {
+  position: relative;
+  display: block;
+}
 
 .cell-img {
   width: 100%;
   height: auto;
   display: block;
-  flex: none;
-  align-self: stretch;
+}
+
+.cell-no {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  padding: 3px 10px 2px;
+  background: var(--table);
+  border: 1px solid var(--line);
+  border-left: 0;
+  border-bottom: 0;
+  font-family: var(--num);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
 }
 
 .cell-void {
@@ -160,7 +184,7 @@
   background:
     repeating-linear-gradient(
       45deg,
-      rgba(22, 24, 26, 0.045) 0 1px,
+      rgba(27, 42, 51, 0.045) 0 1px,
       transparent 1px 7px
     );
 }
@@ -168,24 +192,26 @@
 .cell-cap {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
-  padding: 5px 7px 6px;
-  font-family: var(--num);
-  font-size: 10px;
-  font-variant-numeric: tabular-nums;
-  color: var(--ash);
-  border-top: 1px solid var(--line);
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 9px 9px;
+  border-top: 1px dashed var(--rule);
 }
 
 .cell-cap b {
   font-weight: 600;
+  font-size: 12.5px;
   color: var(--ink);
-  flex: none;
-}
-
-.cell-cap span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.cell-meta {
+  flex: none;
+  font-family: var(--num);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ash);
 }
 
