@@ -9,6 +9,7 @@ runs/
 samples/*
 !samples/README.md
 models/*.onnx
+models/segformer_b2_clothes/
 outputs/**
 !outputs/page.png
 !outputs/electron-window.png

@@ -66,22 +66,30 @@ def run_job(job, config):
     judge = make_judge(config)
     max_attempts = config.get("pipeline", {}).get("max_attempts", 2)
     sampling = config.get("sampling", {})
+    prep_cfg = config.get("prep", {})
     prep_dir = os.path.join(config.get("paths", {}).get("outputs", os.path.join(ROOT, "outputs")), "prep")
-    do_prep = config.get("prep", {}).get("enabled", True)
+    do_prep = prep_cfg.get("enabled", True)
+    prep_mode = prep_cfg.get("mode", "parse")
+    models_dir = config.get("models_dir") or "models"
+    if not os.path.isabs(models_dir):
+        models_dir = os.path.join(ROOT, models_dir)
 
     job.state = "running"
     store.append(job.id, {"stage": "job_start", "job": job.id,
                           "person": job.person_path,
                           "garments": [g["name"] for g in job.garments],
                           "backend": backend.name, "judge_mode": judge.mode,
-                          "prep": do_prep, "max_attempts": max_attempts})
+                          "prep": do_prep, "prep_mode": prep_mode,
+                          "max_attempts": max_attempts})
 
     for case, garment in zip(job.cases, job.garments):
         case["state"] = "running"
 
         ref_path = garment["path"]
         if do_prep:
-            ref_path, prep_meta = crop_garment(garment["path"], prep_dir)
+            ref_path, prep_meta = crop_garment(
+                garment["path"], prep_dir, mode=prep_mode, models_dir=models_dir,
+                device=prep_cfg.get("device", "cpu"))
             if prep_meta:
                 case["prep"] = prep_meta
                 store.append(job.id, {"stage": "prep", "case": case["index"],

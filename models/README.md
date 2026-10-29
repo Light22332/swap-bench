@@ -1,6 +1,8 @@
 # 模型文件
 
-这四个文件不进版本库（一共约 47MB）。跑之前下载到这里：
+这些文件都不进版本库（一共约 157MB）。跑之前下载到这里：
+
+## 人脸 + 手部（OpenCV Zoo，四个 onnx，约 47MB）
 
 ```bash
 curl -L -o models/face_detection_yunet.onnx \
@@ -28,8 +30,42 @@ Invoke-WebRequest -Uri "https://github.com/opencv/opencv_zoo/raw/main/models/han
 后两个是 MediaPipe 的手部模型，官方只有 Python 包，这里是 OpenCV 转换好的 ONNX 版本，
 直接用 `cv2.dnn` 跑，不用装 100MB 的 mediapipe（它会连带升级 numpy/protobuf，容易把 ComfyUI 环境搞坏）。
 
-缺文件时程序不会崩，逐项降级：
+## 人像解析（SegFormer-B2，约 110MB）
+
+参考图裁剪要用它认"人身上的衣服在哪"。
+
+```bash
+mkdir -p models/segformer_b2_clothes
+B=https://huggingface.co/mattmdjaga/segformer_b2_clothes/resolve/main
+for f in config.json preprocessor_config.json model.safetensors; do
+  curl -L -o models/segformer_b2_clothes/$f $B/$f
+done
+```
+
+Windows PowerShell：
+
+```powershell
+$d = "models/segformer_b2_clothes"; New-Item -ItemType Directory -Force $d | Out-Null
+$b = "https://huggingface.co/mattmdjaga/segformer_b2_clothes/resolve/main/"
+foreach ($f in "config.json","preprocessor_config.json","model.safetensors") {
+  Invoke-WebRequest -Uri ($b + $f) -OutFile (Join-Path $d $f)
+}
+```
+
+上不了 huggingface.co 的话，把域名换成 `https://hf-mirror.com`。
+也可以直接用 `huggingface-cli download mattmdjaga/segformer_b2_clothes --local-dir models/segformer_b2_clothes`
+（国内加 `HF_ENDPOINT=https://hf-mirror.com`）。
+
+**协议**：模型来自 [mattmdjaga/segformer_b2_clothes](https://huggingface.co/mattmdjaga/segformer_b2_clothes)，
+SegFormer-B2 在 ATR 人像解析集上微调，基座是 NVlabs/SegFormer，**权重沿用 NVIDIA Source Code License
+（仅限非商业用途）**。自己用、放作品集没问题；要商用就换 rembg 的 `u2net_cloth_seg`（MIT），
+`app/parse_clothes.py` 换个推理后端即可，接口不用动。
+
+## 缺文件时会怎样
+
+程序不会崩，逐项降级：
 
 - 缺人脸模型 → 「脸没变」「没有多余的人」两项返回 null
 - 缺手部模型 → 「手还在」返回 null
+- 缺人像解析模型 → 参考图退回按固定比例裁剪（`config.json` 里 `prep.mode` 设成 `fixed` 也是同样效果）
 - 页面顶部会标出当前能自动检查几项

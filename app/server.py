@@ -200,11 +200,17 @@ class Handler(BaseHTTPRequestHandler):
                 for f in ("palm_detection_mediapipe_2023feb.onnx",
                           "handpose_estimation_mediapipe_2023feb.onnx")
             )
+            prep_cfg = cfg.get("prep", {})
+            parse_dir = os.path.join(ROOT, cfg.get("models_dir", "models"), "segformer_b2_clothes")
+            parse_ready = all(os.path.isfile(os.path.join(parse_dir, f))
+                              for f in ("config.json", "model.safetensors"))
             return self._json({
                 "backend": cfg.get("backend"),
                 "judge": {"mode": "local", "face_models": face_models,
                           "hand_models": hand_models},
-                "prep": cfg.get("prep", {}).get("enabled", True),
+                "prep": {"enabled": prep_cfg.get("enabled", True),
+                         "mode": prep_cfg.get("mode", "parse"),
+                         "parse_model": parse_ready},
                 "max_attempts": cfg.get("pipeline", {}).get("max_attempts", 2),
                 "instruction": cfg.get("instruction", ""),
                 "negative": cfg.get("negative", ""),

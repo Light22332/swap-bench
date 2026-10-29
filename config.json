@@ -11,7 +11,9 @@
   "backend": "comfyui",
   "models_dir": "models",
   "prep": {
-    "enabled": true
+    "enabled": true,
+    "mode": "parse",
+    "device": "cpu"
   },
   "comfyui": {
     "base_url": "http://127.0.0.1:8188",

@@ -161,18 +161,28 @@ def evaluate(person_path, result_path, garment_path=None, models_dir=None, **_):
                     "pass": True, "reason": f"原图 {a} 只手，结果 {b} 只（复核置信度 {confs}）",
                 }
             elif b < a and weak:
-                # 一级找到了框、二级不认：手还在那个位置，但形状不像手
+                # 一级找到了框、二级不认。两种情况说法不一样：
+                # 复核分很低 → 那个位置根本不是手（插兜、被挡住）；
+                # 复核分中不溜 → 手在那里，但画糊了。
                 low = min(w["conf"] for w in weak)
-                checks["hand_preserved"] = {
-                    "pass": False,
-                    "reason": f"原图 {a} 只手，结果只有 {b} 只通过复核；另外 {len(weak)} 处"
-                              f"像手但形状不对（复核 {low:.2f}，门槛 {hands.POSE_CONF}），"
-                              "常见于手指粘连或变形",
-                    "counts": [a, b], "weak_conf": round(low, 3),
-                }
+                if low < hands.POSE_CONF * 0.5:
+                    checks["hand_preserved"] = {
+                        "pass": False, "kind": "occluded",
+                        "reason": f"原图 {a} 只手，结果里找不到手（{len(weak)} 处像手的位置"
+                                  f"复核只有 {low:.2f}，多半是插兜或被挡住了）",
+                        "counts": [a, b], "weak_conf": round(low, 3),
+                    }
+                else:
+                    checks["hand_preserved"] = {
+                        "pass": False, "kind": "mangled",
+                        "reason": f"原图 {a} 只手，结果只有 {b} 只通过复核；另外 {len(weak)} 处"
+                                  f"像手但形状不对（复核 {low:.2f}，门槛 {hands.POSE_CONF}），"
+                                  "常见于手指粘连或变形",
+                        "counts": [a, b], "weak_conf": round(low, 3),
+                    }
             else:
                 checks["hand_preserved"] = {
-                    "pass": False,
+                    "pass": False, "kind": "extra" if b > a else "missing",
                     "reason": f"原图 {a} 只手，结果 {b} 只（{'少了' if b < a else '多了'} "
                               f"{abs(a - b)} 只）",
                     "counts": [a, b],
