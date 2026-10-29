@@ -343,8 +343,8 @@ python tools/run_batch.py \
 要手动指定形状用 `cloud.shape`（`auto` / `openai` / `dashscope`）。
 
 **花销是算出来的，不是估的：** 每次生成按张数乘单价，记在该次尝试的 JSONL 里，再汇总成这批的
-`total_cost`。页脚会多一格「这次花的钱」，检验单的技术细节每次生成后面跟单价，「存档」里每个单子带
-花费、顶上写云端累计。
+`total_cost`。右上角常驻一个「已花 $x.xxx」（云端累计，一打开就在），页脚会多一格「这次花的钱」，
+检验单的技术细节每次生成后面跟单价，「存档」里每个单子带花费、顶上写云端累计。
 
 `qwen-image-2.1-pro` 的官方价是 **$0.035333 / 张**（[百炼文档](https://docs.modelstudio.console.alibabacloud.com/en/model-studio/qwen-image-2-1-pro.md)，
 中国区，2026-10-30 查的），`config.json` 里已经按这个数填好了。换模型记得改这两行，不然算出来的价格是旧模型的。

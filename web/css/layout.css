@@ -48,6 +48,13 @@
   border-color: var(--seal);
 }
 
+/* 云端累计花费：自己看的一眼数，比别的标签深一点 */
+.tag-cost {
+  color: var(--ink);
+  border-color: var(--rule);
+  font-weight: 600;
+}
+
 /* 左栏 */
 
 .bench {

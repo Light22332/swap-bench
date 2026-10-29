@@ -4,6 +4,7 @@
 断网时不会堆一串请求。 */
 
 import { cancelJob, getJob, submitRun } from './api.js';
+import { refreshCostTag } from './cost.js';
 import { $, S, lastStage } from './state.js';
 import { hint, render, syncRun } from './render.js';
 import { renderChips } from './upload.js';
@@ -124,6 +125,7 @@ function finishRun(job) {
   }
   $('rerun').hidden = S.cases.length === 0;
   render();
+  refreshCostTag();          // 跑完刷新右上角的累计花费
   // 跑完把最好那张的检验单直接摊开，别让人对着空地发愣
   if (job && S.cases.length && !S.selected) {
     const best = S.cases.find((c) => c.passed) || S.cases[0];

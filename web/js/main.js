@@ -8,6 +8,7 @@ import { hint, money, render, renderLedger, syncRun } from './render.js';
 import { addGarments, addPerson, isImage, renderChips, wireDrop } from './upload.js';
 import { startRun, stopRun } from './run.js';
 import { initSettings } from './settings.js';
+import { refreshCostTag } from './cost.js';
 
 async function boot() {
   try {
@@ -39,6 +40,8 @@ async function boot() {
 
   // ?demo 只是把示例图放好，仍然要人自己点「开始换」
   if (new URLSearchParams(location.search).has('demo')) $('demo').click();
+
+  refreshCostTag();
 }
 
 async function loadHistory(id) {
