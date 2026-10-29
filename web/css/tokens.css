@@ -16,7 +16,10 @@
   --rework:#A8702A;
 
   --line:  rgba(27, 42, 51, 0.14);
-  --rule:  rgba(27, 42, 51, 0.42);
+  /* 分界线只提示边界，不抢戏：16% 的墨，实线也不刺眼 */
+  --rule:  rgba(27, 42, 51, 0.16);
+  /* 控件自己的边（输入框、标签、虚线框）要比分界线清楚一点 */
+  --rule-firm: rgba(27, 42, 51, 0.34);
   --veil:  rgba(237, 233, 225, 0.86);
 
   --sans: "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", sans-serif;

@@ -53,7 +53,7 @@
   width: 46px;
   align-self: center;
   margin: 0 10px;
-  border-top: 1px dashed var(--rule);
+  border-top: 1px dashed var(--rule-firm);
 }
 
 .step:last-child::after { display: none; }
@@ -125,12 +125,13 @@
   position: relative;
   margin: 0;
   padding: 0;
-  border: 1px solid rgba(27, 42, 51, 0.30);
+  border: 0;
   font: inherit;
   color: inherit;
   text-align: left;
   background: var(--table);
-  /* 硬边墨影：不模糊，一块实心偏移的墨色，像印刷套版差了一点 */
+  /* 硬边墨影：不模糊，一块实心偏移的墨色，像印刷套版差了一点。
+     卡本身不画线——影子的边就是纸的边 */
   box-shadow: 6px 6px 0 rgba(27, 42, 51, 0.13);
   cursor: pointer;
   display: flex;
@@ -208,7 +209,7 @@
   align-items: baseline;
   gap: 10px;
   padding: 8px 9px 9px;
-  border-top: 1px dashed var(--rule);
+  border-top: 1px dashed var(--rule-firm);
 }
 
 .cell-cap b {
