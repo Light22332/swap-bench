@@ -106,7 +106,11 @@ async function ensureComfy() {
 
   spawnLogged('comfyui', PYTHON,
     ['-s', path.join(dir, 'ComfyUI', 'main.py'),
-     '--windows-standalone-build', '--port', String(COMFY_PORT)],
+     '--windows-standalone-build',
+     // --windows-standalone-build 会把 auto_launch 置成 True，ComfyUI 就自己去开浏览器。
+     // 桌面版不需要那个网页，而且它在 cli_args 里判断得比 standalone 更靠后，能压住。
+     '--disable-auto-launch',
+     '--port', String(COMFY_PORT)],
     dir, 'comfyui.log');
   return waitPort(COMFY_PORT, 120000);
 }

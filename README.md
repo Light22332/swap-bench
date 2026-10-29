@@ -162,6 +162,7 @@ npm install
 它会自己按顺序做这几件事，你只需要等窗口出来：
 
 1. 8188 没响应 → 按 `config.json` 里的 `desktop.comfyui_dir` 拉起 ComfyUI，最多等 120 秒
+   （带 `--disable-auto-launch`，不会弹出 ComfyUI 的网页）
 2. 8770 没响应 → 用 `desktop.python` 起 `run.py`，最多等 60 秒
 3. 两个端口都就绪 → 开窗口加载页面
 4. 关窗口 → 收掉它自己起的进程（不是它起的就不动）
