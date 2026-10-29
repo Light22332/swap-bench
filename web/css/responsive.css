@@ -1,18 +1,46 @@
 /* 窄屏调整。放在最后加载，好覆盖上面的规则。 */
 
-/* ---------- 窄屏 ---------- */
+/* ---------- 窄屏：两个槽并排，按钮紧跟着，一屏放得下 ---------- */
 
 @media (max-width: 860px) {
   .bench { grid-template-columns: 1fr; }
+
   .inputs {
     border-right: none;
     border-bottom: 1px solid var(--rule);
   }
-  .slot-person { max-height: 300px; }
-  .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .metric:nth-child(even) { border-right: none; }
-  .step { font-size: 11px; }
-  .step-name { display: none; }
+
+  .flow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 12px;
+    align-items: start;
+  }
+
+  .field:last-child { grid-column: 1 / -1; }
+
+  .slot-garment {
+    aspect-ratio: 3 / 4;
+    min-height: 0;
+  }
+
+  .tip { font-size: 11px; }
+
+  .chips { max-height: 78px; overflow-y: auto; }
+
+  .work { padding-top: 12px; }
+}
+
+/* 再窄一点：报头那排挤不下时，把"本地/云端"这个纯说明性的标签收起来 */
+@media (max-width: 560px) {
+  #backend-tag { display: none; }
+  .masthead { padding: 20px 16px 14px; gap: 10px; }
+  .masthead h1 { font-size: 24px; }
+  .lede { font-size: 11.5px; }
+  .masthead-side { gap: 6px; }
+  .tag { font-size: 10px; padding: 2px 6px; }
+  .ledger-open { font-size: 10.5px; padding: 3px 7px; }
+  .inputs, .work-foot { padding-left: 16px; padding-right: 16px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -14,18 +14,8 @@ async function boot() {
   try {
     const cfg = await getConfig();
     $('backend-tag').textContent = cfg.backend === 'cloud' ? '云端' : '本地';
-
-    const tag = $('judge-tag');
-    const j = cfg.judge || {};
-    const names = [];
-    if (j.face_models) names.push('脸没变');
-    names.push('衣服换上了');
-    if (j.hand_models) names.push('手还在');
-    names.push('背景没动');
-    if (j.face_models) names.push('没有多余的人');
-    tag.textContent = `自动检查 ${names.length} 项`;
-    tag.title = names.join('、') + '。文字水印需人看一眼';
-    if (names.length < 5) tag.classList.add('is-warn');
+    $('backend-tag').title = cfg.backend === 'cloud'
+      ? '用云端接口，按张计费' : '用本机的 ComfyUI，不花钱';
   } catch (e) {
     hint('连不上服务：' + e.message, true);
     return;

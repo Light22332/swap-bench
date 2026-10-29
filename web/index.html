@@ -24,7 +24,6 @@
   </div>
   <div class="masthead-side">
     <div class="tag tag-cost" id="cost-tag" role="status" title="云端累计花费，本地跑不花钱" hidden>—</div>
-    <div class="tag" id="judge-tag" role="status">读取中…</div>
     <div class="tag" id="backend-tag" role="status">读取中…</div>
     <button class="ledger-open" id="settings-open" type="button">设置</button>
     <button class="ledger-open" id="ledger-open" type="button">存档</button>
@@ -36,27 +35,24 @@
   <aside class="inputs">
     <ol class="flow">
       <li class="field">
-        <h2 class="field-title"><span class="num">1</span>放人像</h2>
         <label class="slot slot-person" id="slot-person">
           <input type="file" accept="image/*" id="file-person" class="sr-only">
-          <span class="slot-empty">点这里，或把照片拖进来</span>
+          <span class="slot-empty">点这里放人像<br>或把照片拖进来</span>
           <img class="slot-preview" id="preview-person" alt="" hidden>
         </label>
         <p class="tip">要换衣服的那个人。正脸、全身照效果最好。</p>
       </li>
 
       <li class="field">
-        <h2 class="field-title"><span class="num">2</span>放衣服</h2>
         <label class="slot slot-garment" id="slot-garment">
           <input type="file" accept="image/*" id="file-garment" class="sr-only" multiple>
-          <span class="slot-empty">点这里，或把衣服图拖进来</span>
+          <span class="slot-empty">点这里放衣服<br>一次放好几件也行</span>
         </label>
         <ul class="chips" id="garment-chips"></ul>
-        <p class="tip">想换上的那件。一次放好几件也行，每件出一张。</p>
+        <p class="tip">每件衣服出一张图。</p>
       </li>
 
       <li class="field">
-        <h2 class="field-title"><span class="num">3</span>开始</h2>
         <button class="go" id="run" type="button" disabled>开始换</button>
         <button class="link" id="stop" type="button" hidden>停下</button>
         <p class="hint" id="hint" role="status" aria-live="polite">两张放好之后，点上面的按钮开始。</p>
@@ -68,24 +64,12 @@
 
   <section class="work">
 
-    <div class="rail-wrap">
-      <div class="rail-caption">
-        <span id="rail-case">还没开始</span>
-        <span class="rail-side">
-          <a class="batch" id="batch" href="#" download hidden>整批下载</a>
-          <span class="rail-num" id="rail-num">—</span>
-        </span>
-      </div>
-      <ol class="rail" id="rail" aria-live="polite">
-        <li class="step" data-step="submit"><span class="step-no">①</span><span class="step-name">提交</span><span class="step-time">—</span></li>
-        <li class="step" data-step="generate"><span class="step-no">②</span><span class="step-name">生成</span><span class="step-time">—</span></li>
-        <li class="step" data-step="judge"><span class="step-no">③</span><span class="step-name">质检</span><span class="step-time">—</span></li>
-        <li class="step" data-step="accept"><span class="step-no">④</span><span class="step-name">采纳</span><span class="step-time">—</span></li>
-      </ol>
+    <div class="sheet is-empty" id="sheet" aria-live="polite" aria-label="换装结果">
+      <p class="sheet-empty">放好两张图，换好的样子会出现在这里。</p>
     </div>
 
-    <div class="sheet is-empty" id="sheet" aria-live="polite" aria-label="换装结果">
-      <p class="sheet-empty">把两张图放进左边，换好的样子会出现在这里。</p>
+    <div class="work-foot">
+      <a class="batch" id="batch" href="#" download hidden>整批下载</a>
     </div>
 
     <section class="docket" id="docket" hidden aria-label="这张图的详情">
@@ -98,15 +82,6 @@
       </div>
       <div class="docket-body" id="docket-body"></div>
     </section>
-
-    <footer class="metrics" id="metrics">
-      <div class="metric"><span class="metric-k">合格率</span><span class="metric-v" id="m-final">—</span></div>
-      <div class="metric"><span class="metric-k">首轮通过</span><span class="metric-v" id="m-first">—</span></div>
-      <div class="metric"><span class="metric-k">平均重试</span><span class="metric-v" id="m-att">—</span></div>
-      <div class="metric"><span class="metric-k">平均生成</span><span class="metric-v" id="m-lat">—</span></div>
-      <div class="metric"><span class="metric-k">累计生成</span><span class="metric-v" id="m-total">—</span></div>
-      <div class="metric" id="m-cost-cell" hidden><span class="metric-k">这次花的钱</span><span class="metric-v" id="m-cost">—</span></div>
-    </footer>
 
   </section>
 </main>

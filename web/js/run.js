@@ -99,11 +99,12 @@ function progressText(job) {
   const live = job.cases.find((c) => c.state === 'running')
     || job.cases[job.cases.length - 1];
   if (!live) return '准备中…';
+  const spent = S.elapsed ? `（已用 ${Math.round(S.elapsed)} 秒）` : '';
   const gen = lastStage(live, 'generate');
   const jud = lastStage(live, 'judge');
-  if (!gen) return `第 ${live.index} 件：正在生成…`;
-  if (!jud) return `第 ${live.index} 件：正在检查…`;
-  return `第 ${live.index} 件：${jud.passed ? '通过' : '在返工'}…`;
+  if (!gen) return `第 ${live.index} 件：正在换…${spent}`;
+  if (!jud) return `第 ${live.index} 件：正在看换得对不对…${spent}`;
+  return `第 ${live.index} 件：${jud.passed ? '好了' : '不太对，再换一次'}…${spent}`;
 }
 
 function finishRun(job) {
@@ -126,10 +127,4 @@ function finishRun(job) {
   $('rerun').hidden = S.cases.length === 0;
   render();
   refreshCostTag();          // 跑完刷新右上角的累计花费
-  // 跑完把最好那张的检验单直接摊开，别让人对着空地发愣
-  if (job && S.cases.length && !S.selected) {
-    const best = S.cases.find((c) => c.passed) || S.cases[0];
-    S.selected = best.index;
-    render();
-  }
 }

@@ -48,9 +48,7 @@ export function syncRun() {
 }
 
 export function render() {
-  renderRail();
   renderSheet();
-  renderMetrics();
   syncBatch();
   if (S.selected) {
     const c = S.cases.find((x) => x.index === S.selected);
@@ -58,52 +56,11 @@ export function render() {
   }
 }
 
-function resetRailText() {
-  document.querySelectorAll('.step').forEach((el) => {
-    el.classList.remove('is-active', 'is-done');
-    el.querySelector('.step-time').textContent = '—';
-  });
-}
-
-function renderRail() {
-  const live = S.live;
-  if (!live) {
-    resetRailText();
-    $('rail-case').textContent = '还没开始';
-    $('rail-num').textContent = '—';
-    return;
-  }
-
-  $('rail-case').textContent =
-    `第 ${live.index} / ${S.cases.length} 件 · ${live.garment || ''}`;
-  $('rail-num').textContent = S.elapsed ? `已用 ${Math.round(S.elapsed)} 秒` : '—';
-
-  const gen = lastStage(live, 'generate');
-  const jud = lastStage(live, 'judge');
-  const running = S.running || live.state === 'running';
-
-  const set = (name, state, time) => {
-    const el = document.querySelector('.step[data-step="' + name + '"]');
-    el.classList.toggle('is-active', state === 'active');
-    el.classList.toggle('is-done', state === 'done');
-    el.querySelector('.step-time').textContent = time || '—';
-  };
-
-  set('submit', gen ? 'done' : running ? 'active' : 'pending', gen ? '✓' : null);
-  set('generate', gen ? 'done' : running ? 'active' : 'pending',
-      gen && gen.ok ? gen.latency_s.toFixed(0) + 's' : null);
-  set('judge', jud ? 'done' : gen ? 'active' : 'pending',
-      jud ? jud.latency_s.toFixed(1) + 's' : null);
-  set('accept',
-      live.state !== 'running' && !running ? 'done' : jud ? 'active' : 'pending',
-      jud ? (jud.passed ? '通过' : (jud.failures || []).length + ' 项不过') : null);
-}
-
 function renderSheet() {
   const sheet = $('sheet');
   if (!S.cases.length) {
     if (!sheet.dataset.idle) {
-      sheet.innerHTML = '<p class="sheet-empty">把两张图放进左边，换好的样子会出现在这里。</p>';
+      sheet.innerHTML = '<p class="sheet-empty">放好两张图，换好的样子会出现在这里。</p>';
       sheet.classList.add('is-empty');
       sheet.dataset.idle = '1';
     }
@@ -159,10 +116,7 @@ function renderSheet() {
     cap.className = 'cell-cap';
     const nm = document.createElement('b');
     nm.textContent = c.garment || '';
-    const meta = document.createElement('span');
-    meta.className = 'cell-meta';
-    meta.textContent = metaText(c, gen);
-    cap.append(nm, meta);
+    cap.append(nm);
 
     cell.append(frame, cap);
 
@@ -248,6 +202,23 @@ function renderDocket(c) {
   });
   detail.append(ul);
   body.append(detail);
+
+  // 一批的汇总收在这里：主界面上一个数字都不放，想看才点开
+  const m = S.metrics || {};
+  if (m.cases) {
+    const pct = (v) => (v == null ? '—' : Math.round(v * 100) + '%');
+    const line = document.createElement('p');
+    line.className = 'docket-metrics';
+    line.textContent = [
+      `这批 ${m.cases} 件`,
+      `合格 ${pct(m.final_pass_rate)}`,
+      `首轮 ${pct(m.first_pass_rate)}`,
+      `平均重试 ${m.avg_attempts}`,
+      `平均生成 ${m.avg_generate_s}s`,
+      m.total_cost ? `本次 ${money(m.total_cost, m.cost_currency)}` : '',
+    ].filter(Boolean).join(' · ');
+    body.append(line);
+  }
 }
 
 /** 钱的写法：美元用 $，人民币用 ¥；不到 1 块留三位小数，免得每张都显示 0.04。 */
@@ -259,37 +230,6 @@ export function money(v, cur) {
 
 function curOf() {
   return (S.metrics && S.metrics.cost_currency) || 'USD';
-}
-
-function renderMetrics() {
-  const m = S.metrics || {};
-  const pct = (v) => (v == null ? '—' : Math.round(v * 100) + '%');
-  $('m-final').textContent = pct(m.final_pass_rate);
-  $('m-first').textContent = pct(m.first_pass_rate);
-  $('m-att').textContent = m.avg_attempts != null
-    ? (m.escape_attempts ? `${m.avg_attempts}（降级 ${m.escape_attempts} 次）` : m.avg_attempts)
-    : '—';
-  $('m-lat').textContent = m.avg_generate_s ? m.avg_generate_s + 's' : '—';
-  $('m-total').textContent = m.total_generate_s ? m.total_generate_s + 's' : '—';
-
-  // 云端跑过才显示这一格；本地跑一直是 0，没必要占地方
-  const cell = $('m-cost-cell');
-  if (m.total_cost) {
-    cell.hidden = false;
-    $('m-cost').textContent = money(m.total_cost, curOf());
-  } else {
-    cell.hidden = true;
-  }
-}
-
-
-/** 格子底线上的那行小字：这张花了多久、试了几次。 */
-function metaText(c, gen) {
-  const bits = [];
-  if (gen && gen.latency_s) bits.push(Math.round(gen.latency_s) + 's');
-  if (c.attempts_used) bits.push(c.attempts_used + ' 次');
-  if (bits.length) return bits.join(' · ');
-  return c.state === 'running' ? '生成中…' : '';
 }
 
 /** 按住格子换成原片，松开换回来。按下先等 120ms，避免普通点击闪一下。 */
