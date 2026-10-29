@@ -22,6 +22,14 @@ export function saveSettings(payload) {
   }).then(json);
 }
 
+export function extractGarment(path) {
+  return fetch('/api/extract', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path }),
+  }).then(json);
+}
+
 export function getJob(id) {
   return fetch('/api/job/' + id).then(json);
 }

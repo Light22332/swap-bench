@@ -10,7 +10,10 @@ import shutil
 import time
 import urllib.parse
 
+from ...capability.prep.extract_garment import extract
+from ...core import config as app_config
 from ...core import paths
+from .. import state
 
 MAX_BYTES = 30 * 1024 * 1024
 SAFE = re.compile(r"[^A-Za-z0-9_.\-]")
@@ -30,7 +33,31 @@ def handle_post(req):
         return _upload(req)
     if req.path == "/api/samples":
         return _samples(req)
+    if req.path == "/api/extract":
+        return _extract(req)
     return False
+
+
+def _extract(req):
+    """从一张人物照片里把衣服抠出来，产物落在 outputs/extract/。"""
+    data = req.body() or {}
+    src = paths.inside(data.get("path") or "")
+    if not src or not os.path.isfile(src):
+        req.json({"error": "找不到要提取的那张照片"}, 400)
+        return True
+
+    cfg = state.get_config()
+    out_dir = os.path.join(app_config.outputs_dir(cfg), "extract")
+    dst, meta = extract(src, out_dir, app_config.models_dir(cfg))
+    if not dst:
+        req.json({"error": meta.get("error", "没提取出来"), **meta}, 422)
+        return True
+
+    rel = paths.rel(dst)
+    req.json({"ok": True, "path": rel, "url": _url(rel),
+              "name": os.path.splitext(os.path.basename(src))[0] + " 提取的衣服",
+              **meta})
+    return True
 
 
 def _upload(req):

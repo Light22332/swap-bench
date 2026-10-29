@@ -30,6 +30,17 @@
   opacity: 0.8;
 }
 
+.viewer-save {
+  font-size: 12.5px;
+  color: var(--table);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(237, 233, 225, 0.5);
+  padding-bottom: 1px;
+}
+
+.viewer-save:hover { border-bottom-color: var(--table); }
+.viewer-save:focus-visible { outline: 2px solid var(--table); outline-offset: 3px; }
+
 .viewer-close {
   position: absolute;
   top: 14px;

@@ -20,6 +20,11 @@ function build() {
   const cap = document.createElement('p');
   cap.className = 'viewer-cap';
 
+  const save = document.createElement('a');
+  save.className = 'viewer-save';
+  save.textContent = '保存这张图';
+  save.setAttribute('download', '');
+
   const close = document.createElement('button');
   close.className = 'viewer-close';
   close.type = 'button';
@@ -31,7 +36,7 @@ function build() {
     if (ev.target === box) hide();      // 点背景关掉，点图不关
   });
 
-  box.append(img, cap, close);
+  box.append(img, cap, save, close);
   document.body.append(box);
 
   document.addEventListener('keydown', (ev) => {
@@ -45,6 +50,9 @@ export function show(url, name) {
   lastFocus = document.activeElement;
   box.querySelector('.viewer-img').src = url;
   box.querySelector('.viewer-cap').textContent = name || '';
+  const save = box.querySelector('.viewer-save');
+  save.href = url;
+  save.setAttribute('download', (name || 'image').replace(/\.[^.]+$/, '') + '.png');
   box.hidden = false;
   box.querySelector('.viewer-close').focus();
 }

@@ -2,7 +2,7 @@
 
 启动顺序：读配置 → 有 ?job= 就还原历史，否则等用户放图 → ?demo 直接跑示例。 */
 
-import { getConfig, getHistory, getJob, getMetrics, loadSamples } from './api.js';
+import { getConfig, getHistory, getJob, getMetrics, loadSamples, uploadFile, extractGarment } from './api.js';
 import { $, S } from './state.js';
 import { hint, money, render, renderLedger, syncRun } from './render.js';
 import { addGarments, addPerson, isImage, renderChips, wireDrop } from './upload.js';
@@ -75,6 +75,28 @@ $('docket-close').addEventListener('click', () => { $('docket').hidden = true; }
 
 $('run').addEventListener('click', startRun);
 $('stop').addEventListener('click', stopRun);
+
+// 从一张人物照片里把衣服抠出来，抠好直接进衣服槽
+$('extract').addEventListener('click', () => $('file-extract').click());
+$('file-extract').addEventListener('change', async (ev) => {
+  const f = ev.target.files[0];
+  ev.target.value = '';
+  if (!f) return;
+  hint('正在从照片里找衣服…');
+  try {
+    const up = await uploadFile(f);
+    const r = await extractGarment(up.path);
+    // 用用户自己的文件名，别把上传时加的时间戳前缀带上去
+    const label = f.name.replace(/\.[^.]+$/, '') + ' 提取的衣服';
+    S.garments.push({ path: r.path, url: r.url, name: label, state: 'pending' });
+    renderChips();
+    syncRun();
+    showViewer(r.url, label);
+    hint('抠出来了，已经放进衣服那边。要换就点「开始换」。');
+  } catch (e) {
+    hint('没提取出来：' + e.message, true);
+  }
+});
 
 // 人像格右上角的"看大图"：别让 label 顺手唤起文件选择
 $('zoom-person').addEventListener('click', (ev) => {
