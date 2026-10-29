@@ -1,0 +1,142 @@
+{
+  "GET /api/config": {
+    "shape": {
+      "backend": "str",
+      "instruction": "str",
+      "judge": {
+        "face_models": "bool",
+        "hand_models": "bool",
+        "mode": "str"
+      },
+      "max_attempts": "int",
+      "negative": "str",
+      "prep": {
+        "enabled": "bool",
+        "mode": "str",
+        "parse_model": "bool"
+      },
+      "sampling": {
+        "cfg": "float",
+        "resolution": "int",
+        "sampler": "str",
+        "scheduler": "str",
+        "steps": "int"
+      }
+    },
+    "status": 200,
+    "type": "json"
+  },
+  "GET /api/job/<id>": {
+    "shape": {
+      "cases": [
+        {
+          "attempts": [
+            {
+              "attempt": "int",
+              "case": "int",
+              "error": "null",
+              "error_kind": "str",
+              "garment": "str",
+              "ok": "bool",
+              "stage": "str",
+              "ts": "str"
+            }
+          ],
+          "attempts_used": "int",
+          "final_image": "null",
+          "final_url": "null",
+          "first_attempt_passed": "bool",
+          "garment": "str",
+          "index": "int",
+          "instruction_used": "str",
+          "passed": "bool",
+          "state": "str",
+          "verdict": "null"
+        }
+      ],
+      "elapsed_s": "int",
+      "error": "null",
+      "id": "str",
+      "judge_mode": "str",
+      "metrics": {
+        "avg_attempts": "float",
+        "avg_generate_s": "float",
+        "cases": "int",
+        "failure_reasons": {},
+        "final_pass_rate": "float",
+        "first_pass_rate": "float",
+        "judge_mode": "str",
+        "total_generate_s": "int"
+      },
+      "replayed": "bool",
+      "state": "str"
+    },
+    "status": 200,
+    "type": "json"
+  },
+  "GET /api/job/不存在": {
+    "shape": {
+      "error": "str"
+    },
+    "status": 404,
+    "type": "json"
+  },
+  "GET /api/jobs": {
+    "shape": [],
+    "status": 200,
+    "type": "json"
+  },
+  "GET /api/metrics": {
+    "shape": {
+      "avg_attempts": "float",
+      "cases": "int",
+      "final_pass_rate": "float",
+      "first_pass_rate": "float",
+      "jobs": "int"
+    },
+    "status": 200,
+    "type": "json"
+  },
+  "GET /img?path=": {
+    "shape": "binary",
+    "status": 200,
+    "type": "image/png"
+  },
+  "GET /static/app.js": {
+    "shape": "binary",
+    "status": 200,
+    "type": "text/javascript"
+  },
+  "GET /不存在": {
+    "shape": {
+      "error": "str"
+    },
+    "status": 404,
+    "type": "json"
+  },
+  "POST /api/config 空": {
+    "shape": {
+      "ok": "bool"
+    },
+    "status": 200,
+    "type": "json"
+  },
+  "POST /api/run 空": {
+    "shape": {
+      "error": "str"
+    },
+    "status": 400,
+    "type": "json"
+  },
+  "POST /api/upload": {
+    "shape": {
+      "file": "str",
+      "ok": "bool",
+      "path": "str",
+      "size": "int",
+      "url": "str"
+    },
+    "status": 200,
+    "type": "json"
+  }
+}

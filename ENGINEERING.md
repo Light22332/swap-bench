@@ -67,11 +67,12 @@ app/
     select.py          best(tried) -> 第几次最好，纯函数
     runner.py          串起来跑：调后端、调判定、落 JSONL
   api/                 HTTP 层：只管请求解析和响应
-    server.py          骨架：ThreadingHTTPServer + 路由注册
-    routes/
-      config.py  upload.py  run.py  job.py  static.py
-    jobs.py            在跑任务的内存表（锁、查询、清理）
-  cli.py               `python -m app` 的入口
+    server.py          骨架：起服务、分发、写字节
+    http.py            Request 包装
+    state.py           配置快照与在跑的任务表（锁都在这里）
+    history.py         从 JSONL 还原历史任务、全站汇总
+    view.py            文件路径 → 前端 URL
+    routes/            config / jobs / run / upload / static，各导出 handle_get / handle_post
 web/
   index.html
   css/                 tokens.css  base.css  layout.css  bench.css  docket.css
@@ -252,6 +253,15 @@ Phase 0 和 1 不改变任何行为，可以放心做；Phase 2 是唯一需要�
 - 删掉 `judge/vlm.py`（123 行死代码，它最后的版本在提交 `489de5d7` 之前）
 - 相对 import 从两级变三级（`...core`），`tools/check.py` 的依赖检查扩成整条链：core 不许往上、capability 不许引 pipeline/api
 - 验收：`check.py` 8/8；`replay.py` 20 次尝试、**翻转 0**；服务重启后 `/api/config` 正常
+
+**Phase 4 完成（2026-10-29）**
+
+- `app/server.py`（389 行）拆成 `app/api/`：骨架 92 行，`routes/` 五个模块各 27–78 行，`state.py` / `history.py` / `view.py` / `http.py` 分掉剩下的
+- 新增 `tools/api_baseline.py`：改之前把 11 个接口的状态码和 JSON 键结构录成 `tools/api_baseline.json`，改完一条命令比对
+- 验收：`api_baseline.py check` 报告 11 个接口结构一致；`check.py` 8/8；`replay.py` 翻转 0；页面深链实测五行判定正常
+- 这一步的规矩是**接口不变**：路由搬走、锁搬走，响应体一个键都没动
+
+
 
 
 
