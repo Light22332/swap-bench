@@ -52,11 +52,13 @@ def handle_post(req):
     if not jid:
         req.json({"error": "要给一个 job_id"}, 400)
         return True
-    if not state.cancel_job(jid):
+    how = state.cancel_job(jid)
+    if not how:
         req.json({"error": "没有这个正在跑的任务"}, 404)
         return True
-    req.json({"ok": True, "job_id": jid,
-              "note": "已经叫停。正在生成的那一张会跑完，之后不再重试。"})
+    note = ("已经从队列里划掉了，不会再开跑" if how == "queued"
+            else "已经叫停。正在生成的那一张会跑完，之后不再重试")
+    req.json({"ok": True, "job_id": jid, "note": note})
     return True
 
 

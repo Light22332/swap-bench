@@ -12,10 +12,19 @@ import sys
 from . import paths
 
 DEFAULTS = {
-    "cloud": {"base_url": "", "api_key": "", "model": "", "timeout": 120},
+    "cloud": {
+        "base_url": "", "api_key": "", "model": "", "timeout": 120,
+        "size": "",                 # 留空按竖版人像给 1024x1536
+        "price_per_image": 0.0,     # 填了就把单张成本记进 GenResult.cost
+    },
     "server": {"host": "127.0.0.1", "port": 8770},
     "backend": "comfyui",
     "models_dir": "models",
+    "comfyui": {
+        "base_url": "http://127.0.0.1:8188",
+        "input_dir": "",          # ComfyUI 的 input 目录；装到哪台机器都不一样，留空就报错提示
+        "min_vram_gb": 12,        # 显存低于这个数就别开跑，跑到一半 OOM 更难受；填 0 关掉
+    },
     "prep": {
         "enabled": True,
         "mode": "parse",          # parse=人像解析找衣服框；fixed=老办法按比例裁
@@ -130,6 +139,11 @@ def comfyui_base(cfg):
 def comfyui_dir(cfg):
     """ComfyUI 安装根目录（下面要有 ComfyUI/main.py）。桌面壳和预热脚本都用它。"""
     return (cfg.get("desktop") or {}).get("comfyui_dir") or ""
+
+
+def comfyui_input_dir(cfg):
+    """ComfyUI 的 input 目录：输入图要先放这儿，LoadImage 才读得到。"""
+    return (cfg.get("comfyui") or {}).get("input_dir") or ""
 
 
 def desktop_python(cfg):

@@ -1,15 +1,15 @@
-"""提交任务：校验路径、起一个线程去跑，立刻返回 job_id。
+"""提交任务：校验路径、探一下服务、丢进队列，立刻返回 job_id。
 
-任务在后台线程里跑，页面靠轮询 /api/job/{id} 拿进度。
+本地后端排成一队串行跑（ComfyUI 一次只跑一张图，见 queue.py 里的说明）；
+云端后端直接并发。页面靠轮询 /api/job/{id} 拿进度。
 """
 import os
-import threading
 
 from ...capability.generate import make_backend
 from ...core import config as app_config
 from ...core import paths
-from ...pipeline import new_job, run_job
-from .. import state
+from ...pipeline import new_job
+from .. import queue, state
 
 
 def handle_post(req):
@@ -45,37 +45,42 @@ def handle_post(req):
     instruction = data.get("instruction") or app_config.instruction(cfg)
     negative = data.get("negative") or app_config.negative(cfg)
 
-    if not _can_generate(cfg):
-        req.json({"error": "换装服务还没起来。先双击根目录的「预热.bat」，"
-                           "等它说「可以开始演示了」，再点一次开始。"}, 400)
-        return True
+    if app_config.backend(cfg) == "comfyui":
+        bad = _preflight(cfg)
+        if bad:
+            req.json({"error": bad}, 400)
+            return True
 
     job = new_job(person_full, glist, instruction, negative, cfg)
     state.add_job(job)
-    threading.Thread(target=_run_guarded, args=(job, cfg), daemon=True).start()
-    req.json({"ok": True, "job_id": job.id})
+    busy = sum(1 for j in state.recent_jobs(50) if j.state in ("queued", "running"))
+    queue.submit(job, cfg, serial=(app_config.backend(cfg) == "comfyui"))
+    req.json({"ok": True, "job_id": job.id, "queued": busy})
     return True
 
 
-def _can_generate(cfg):
-    """本地后端先探一眼：ComfyUI 不在就当场说清楚，别让后台线程抛一堆堆栈给用户看。
+def _preflight(cfg):
+    """本地后端开跑之前该说的话，别等 LoadImage 报一串节点错误。
 
-    探测本身出问题就放行——这道闸门是为了把话说清楚，不是为了避免出错。
+    返回一句话就表示拦下来；返回 None 表示可以跑。
     """
-    if app_config.backend(cfg) != "comfyui":
-        return True
-    try:
-        return make_backend("comfyui", cfg).ping()
-    except Exception:
-        return True
+    input_dir = app_config.comfyui_input_dir(cfg)
+    if not input_dir or not os.path.isdir(input_dir):
+        return (f"ComfyUI 的收图目录不存在：{input_dir or '（没填）'}。"
+                "到「设置」里改成 ComfyUI 的 input 目录，比如 …\\ComfyUI\\input。")
 
+    min_vram = app_config.section(cfg, "comfyui")["min_vram_gb"]
+    if not min_vram:
+        return None
 
-def _run_guarded(job, cfg):
-    """后台线程里跑。抛异常也要落到 job 上，别让页面一直转圈。"""
-    try:
-        run_job(job, cfg)
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        job.error = f"{type(e).__name__}: {e}"
-        job.state = "error"
+    stats = make_backend("comfyui", cfg).system_stats()
+    if stats is None:
+        return ("换装服务还没起来。先双击根目录的「预热.bat」，"
+                "等它说「可以开始演示了」，再点一次开始。")
+    devs = stats.get("devices") or []
+    if devs:
+        gb = (devs[0].get("vram_total") or 0) / (1024 ** 3)
+        if 0 < gb < float(min_vram):
+            return (f"这张显卡只有 {gb:.0f}GB 显存，这套模型要 {min_vram:.0f}GB 以上。"
+                    "换张卡，或者到「设置」里改用云端。")
+    return None

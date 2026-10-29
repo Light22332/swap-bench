@@ -5,6 +5,7 @@ JSONL 还原，所以这里不做持久化。
 """
 import json
 import threading
+import time
 
 from ..core import config as app_config
 
@@ -64,10 +65,14 @@ def cancel_job(jid):
     """给一个正在跑的任务打叫停标记。
 
     立刻返回，但真正停下来要等当前这一轮跑完：已经在 ComfyUI 里生成的那张没法中断
-    （硬中断会污染 QwenImage21Cache，见 README 坑五）。
+    （硬中断会污染 QwenImage21Cache，见 README 坑五）。还在排队的那单可以当场划掉。
     """
     job = get_job(jid)
     if job is None:
-        return False
+        return None
+    if job.state == "queued":
+        job.state = "cancelled"
+        job.finished = time.time()
+        return "queued"
     job.cancel_requested = True
-    return True
+    return "running"

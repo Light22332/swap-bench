@@ -46,6 +46,7 @@ async function runPending(pending) {
     });
     S.job = data.job_id;
     S.pendingPaths = pending.map((g) => g.path);
+    if (data.queued) hint(`排上了，前面还有 ${data.queued} 单…`);
     poll();
   } catch (e) {
     hint('提交失败：' + e.message, true);
@@ -60,7 +61,7 @@ function poll() {
       const job = await getJob(S.job);
       merge(job);
       render();
-      if (job.state === 'running' || job.state === 'pending') {
+      if (job.state === 'queued' || job.state === 'running' || job.state === 'pending') {
         // 叫停之后别再让进度文案盖掉那句"等这张跑完就停"
         hint(S.stopping ? '叫停了，等正在跑的这张回来就停…' : progressText(job));
         poll();
@@ -93,6 +94,7 @@ function merge(job) {
 }
 
 function progressText(job) {
+  if (job.state === 'queued') return '排队中：本地一次只跑一单，前面那单结束就开始…';
   const live = job.cases.find((c) => c.state === 'running')
     || job.cases[job.cases.length - 1];
   if (!live) return '准备中…';

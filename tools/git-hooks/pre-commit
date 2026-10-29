@@ -22,7 +22,12 @@ fi
 
 added=$(git diff --cached -U0 --no-color | grep '^+' | grep -v '^+++' || true)
 
-hit=$(printf '%s\n' "$added" | grep -En 'sk-[A-Za-z0-9_-]{16,}|"api_key"[[:space:]]*:[[:space:]]*"[^"]{8,}"|Bearer[[:space:]]+[A-Za-z0-9._-]{20,}' || true)
+# sk- / Bearer 一律不放行；api_key 的赋值跳过 test/fake/dummy 这类占位值
+hit_sk=$(printf '%s\n' "$added" | grep -En 'sk-[A-Za-z0-9_-]{16,}|Bearer[[:space:]]+[A-Za-z0-9._-]{20,}' || true)
+hit_key=$(printf '%s\n' "$added" | grep -En '"api_key"[[:space:]]*:[[:space:]]*"[^"]{8,}"' \
+          | grep -vEi 'test|fake|dummy|example|placeholder|your[_-]?key' || true)
+hit=$(printf '%s\n%s\n' "$hit_sk" "$hit_key" | grep -v '^$' || true)
+
 if [ -n "$hit" ]; then
   echo "[secret-guard] 提交被拒绝：暂存内容里有像密钥的东西"
   printf '%s\n' "$hit" | cut -c1-140

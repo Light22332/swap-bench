@@ -17,7 +17,7 @@
   },
   "comfyui": {
     "base_url": "http://127.0.0.1:8188",
-    "input_dir": "D:\\Comfyui\\ComfyUI\\input"
+    "input_dir": "D:/Comfyui/ComfyUI/input"
   },
   "models": {
     "unet": "qwen_image_2.1_int8_convrot.safetensors",

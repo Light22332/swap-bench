@@ -61,6 +61,23 @@ SegFormer-B2 在 ATR 人像解析集上微调，基座是 NVlabs/SegFormer，**�
 （仅限非商业用途）**。自己用、放作品集没问题；要商用就换 rembg 的 `u2net_cloth_seg`（MIT），
 `app/capability/prep/parse_clothes.py` 换个推理后端即可，接口不用动。
 
+## 生成要用的权重（本仓库不带，得自己准备）
+
+上面那 157MB 是**质检和裁剪**用的。真正出图的模型在 ComfyUI 那一侧，仓库里没有，
+也不打算带：GB 级别，而且各有各的许可。四个文件名要和 `config.json` 的 `models` 段对上：
+
+| `config.json` 里的键 | 文件 | 放哪 |
+|---|---|---|
+| `unet` | `qwen_image_2.1_int8_convrot.safetensors` | `ComfyUI/models/unet/`（新版叫 `diffusion_models/`，两个目录都会扫） |
+| `clip` | `qwen3vl_8b_int8_convrot.safetensors` | `ComfyUI/models/text_encoders/`（老版本是 `clip/`） |
+| `vae` | `qwen_image_2.1_vae_bf16.safetensors` | `ComfyUI/models/vae/` |
+| `lora` | `Qwen-Image-2.1 NSW Image Edit.safetensors` | `ComfyUI/models/loras/` |
+
+换成别的模型或改了文件名，只改 `config.json` 里这四行，代码一行都不用动。
+
+显存：这套组合实测用到 15GB，所以开跑前会看一眼显卡，低于 `config.json` 的
+`comfyui.min_vram_gb`（默认 12）就拦下来，不让它跑到一半 OOM。填 `0` 关掉这项检查。
+
 ## 缺文件时会怎样
 
 程序不会崩，逐项降级：
