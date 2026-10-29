@@ -18,6 +18,8 @@ export const S = {
   jobStart: 0,
   pendingPaths: [],
   defaultInstruction: '',
+  personUrl: null,   // 原片地址，按住格子看对比时用
+  history: [],
 };
 
 export const $ = (id) => document.getElementById(id);

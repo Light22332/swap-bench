@@ -32,6 +32,7 @@ class Job:
         return {
             "id": self.id,
             "state": self.state,
+            "person": self.person_path,
             "elapsed_s": round((self.finished or time.time()) - self.started, 1),
             "judge_mode": "local",
             "cases": self.cases,

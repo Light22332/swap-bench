@@ -49,6 +49,7 @@ export function render() {
   renderRail();
   renderSheet();
   renderMetrics();
+  syncBatch();
   if (S.selected) {
     const c = S.cases.find((x) => x.index === S.selected);
     if (c) renderDocket(c);
@@ -120,6 +121,7 @@ function renderSheet() {
     cell.setAttribute('aria-label',
       `第 ${c.index} 件 ${c.garment || ''}，${text}`);
 
+    let thumb = null;
     if (gen && gen.image_url) {
       const img = document.createElement('img');
       img.className = 'cell-img';
@@ -128,6 +130,7 @@ function renderSheet() {
       img.width = 768;
       img.height = 1344;
       cell.append(img);
+      thumb = img;
     } else {
       const v = document.createElement('span');
       v.className = 'cell-void';
@@ -149,6 +152,11 @@ function renderSheet() {
     st.textContent = text;
     st.setAttribute('aria-hidden', 'true');
     cell.append(st);
+
+    if (thumb && S.personUrl) {
+      holdToCompare(cell, thumb);
+      cell.title = '点开看检验单；按住看原片';
+    }
 
     cell.addEventListener('click', () => {
       S.selected = c.index;
@@ -237,4 +245,89 @@ function renderMetrics() {
     : '—';
   $('m-lat').textContent = m.avg_generate_s ? m.avg_generate_s + 's' : '—';
   $('m-total').textContent = m.total_generate_s ? m.total_generate_s + 's' : '—';
+}
+
+
+/** 按住格子换成原片，松开换回来。按下先等 120ms，避免普通点击闪一下。 */
+function holdToCompare(cell, img) {
+  if (!img) return;
+  let timer = null;
+  let showing = false;
+  let saved = '';
+
+  const show = () => {
+    timer = setTimeout(() => {
+      saved = img.src;
+      img.src = S.personUrl;
+      cell.classList.add('tip-original');
+      showing = true;
+    }, 120);
+  };
+
+  const hide = () => {
+    clearTimeout(timer);
+    if (!showing) return;
+    img.src = saved;
+    cell.classList.remove('tip-original');
+    showing = false;
+  };
+
+  cell.addEventListener('pointerdown', show);
+  cell.addEventListener('pointerup', hide);
+  cell.addEventListener('pointerleave', hide);
+  cell.addEventListener('pointercancel', hide);
+}
+
+/** 整批下载：有图才出现，指向当前这次任务。 */
+function syncBatch() {
+  const a = $('batch');
+  const has = S.cases.some((c) => c.final_image || c.final_url);
+  a.hidden = !(has && S.job);
+  if (has && S.job) a.href = '/api/export?job=' + S.job;
+}
+
+/** 存档列表：一行一次，日期在最左。 */
+export function renderLedger(items) {
+  const ul = $('ledger-list');
+  ul.innerHTML = '';
+  if (!items.length) {
+    const li = document.createElement('li');
+    li.className = 'ledger-empty';
+    li.textContent = '还没有跑过的单子。左边放两张图，跑一次就有了。';
+    ul.append(li);
+    return;
+  }
+  items.forEach((j) => {
+    const li = document.createElement('li');
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'ledger-row';
+
+    const when = document.createElement('span');
+    when.className = 'ledger-when';
+    when.textContent = (j.ts || '').replace('T', ' ').slice(5, 16) || '—';
+
+    const what = document.createElement('span');
+    what.className = 'ledger-what';
+    what.textContent = (j.garments || []).join('、') || '—';
+    const small = document.createElement('small');
+    small.textContent = `${j.cases} 件 · ${duration(j.elapsed_s)}`;
+    what.append(small);
+
+    const pass = document.createElement('span');
+    const all = j.passed === j.cases;
+    pass.className = 'ledger-pass' + (all ? ' is-all' : j.passed ? '' : ' is-none');
+    pass.textContent = `通过 ${j.passed}/${j.cases}`;
+
+    row.append(when, what, pass);
+    row.addEventListener('click', () => { location.href = '/?job=' + j.id; });
+    li.append(row);
+    ul.append(li);
+  });
+}
+
+function duration(seconds) {
+  if (!seconds) return '—';
+  if (seconds < 60) return Math.round(seconds) + ' 秒';
+  return (seconds / 60).toFixed(1) + ' 分钟';
 }

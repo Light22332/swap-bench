@@ -2,9 +2,9 @@
 
 启动顺序：读配置 → 有 ?job= 就还原历史，否则等用户放图 → ?demo 直接跑示例。 */
 
-import { getConfig, getJob, loadSamples } from './api.js';
+import { getConfig, getHistory, getJob, loadSamples } from './api.js';
 import { $, S } from './state.js';
-import { hint, render, syncRun } from './render.js';
+import { hint, render, renderLedger, syncRun } from './render.js';
 import { addGarments, addPerson, isImage, renderChips, wireDrop } from './upload.js';
 import { startRun } from './run.js';
 
@@ -50,6 +50,8 @@ async function loadHistory(id) {
     S.metrics = job.metrics;
     S.judgeMode = job.metrics && job.metrics.judge_mode;
     S.elapsed = job.elapsed_s;
+    S.job = job.id;
+    S.personUrl = job.person_url || null;
     S.live = S.cases[S.cases.length - 1];
     const which = new URLSearchParams(location.search).get('case');
     if (which) S.selected = Number(which);
@@ -96,6 +98,32 @@ $('demo').addEventListener('click', async () => {
   } catch (e) {
     hint('载入示例失败：' + e.message, true);
   }
+});
+
+/* 存档：打开时现拉一次列表，最近的在前 */
+async function openLedger() {
+  const panel = $('ledger');
+  panel.hidden = false;
+  $('ledger-close').focus();
+  try {
+    const items = await getHistory();
+    S.history = items;
+    renderLedger(items);
+  } catch (e) {
+    renderLedger([]);
+    hint('读存档失败：' + e.message, true);
+  }
+}
+
+function closeLedger() {
+  $('ledger').hidden = true;
+  $('ledger-open').focus();
+}
+
+$('ledger-open').addEventListener('click', openLedger);
+$('ledger-close').addEventListener('click', closeLedger);
+document.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Escape' && !$('ledger').hidden) closeLedger();
 });
 
 $('rerun').addEventListener('click', () => {

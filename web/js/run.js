@@ -70,6 +70,8 @@ function merge(job) {
     _path: (S.pendingPaths && S.pendingPaths[i]) || null,
   }));
   S.cases = S.cases.slice(0, S.jobStart).concat(mapped);
+  S.job = job.id || S.job;
+  S.personUrl = job.person_url || S.personUrl;
   S.live = mapped.find((c) => c.state === 'running') || mapped[mapped.length - 1] || null;
   S.elapsed = job.elapsed_s;
   if (job.metrics && job.state === 'done') {

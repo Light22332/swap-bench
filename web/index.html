@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="/static/css/layout.css">
 <link rel="stylesheet" href="/static/css/bench.css">
 <link rel="stylesheet" href="/static/css/docket.css">
+<link rel="stylesheet" href="/static/css/ledger.css">
 <link rel="stylesheet" href="/static/css/responsive.css">
 </head>
 <body>
@@ -23,6 +24,7 @@
   <div class="masthead-side">
     <div class="tag" id="judge-tag" role="status">读取中…</div>
     <div class="tag" id="backend-tag" role="status">读取中…</div>
+    <button class="ledger-open" id="ledger-open" type="button">存档</button>
   </div>
 </header>
 
@@ -72,7 +74,10 @@
     <div class="rail-wrap">
       <div class="rail-caption">
         <span id="rail-case">还没开始</span>
-        <span class="rail-num" id="rail-num">—</span>
+        <span class="rail-side">
+          <a class="batch" id="batch" href="#" download hidden>整批下载</a>
+          <span class="rail-num" id="rail-num">—</span>
+        </span>
       </div>
       <ol class="rail" id="rail" aria-live="polite">
         <li class="step" data-step="submit"><span class="step-no">①</span><span class="step-name">提交</span><span class="step-time">—</span></li>
@@ -107,6 +112,15 @@
 
   </section>
 </main>
+
+<section class="ledger" id="ledger" hidden aria-label="存档：以前跑过的单子">
+  <div class="ledger-head">
+    <h2>存档</h2>
+    <button class="close" id="ledger-close" type="button" aria-label="关闭存档">×</button>
+  </div>
+  <p class="ledger-note">点一行，把那次的结果调出来。</p>
+  <ol class="ledger-list" id="ledger-list"></ol>
+</section>
 
 <script type="module" src="/static/js/main.js"></script>
 </body>

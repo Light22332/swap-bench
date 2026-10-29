@@ -14,6 +14,10 @@ export function getJob(id) {
   return fetch('/api/job/' + id).then(json);
 }
 
+export function getHistory() {
+  return fetch('/api/history').then(json);
+}
+
 export function loadSamples() {
   return fetch('/api/samples', { method: 'POST' }).then(json);
 }

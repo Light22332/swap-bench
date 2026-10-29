@@ -26,3 +26,6 @@ class Request:
 
     def file(self, path, cache="max-age=120", ctype=None):
         self.handler._file(path, cache, ctype)
+
+    def bytes(self, data, ctype, cache="max-age=120", extra=None):
+        self.handler._bytes(data, ctype, cache, extra)

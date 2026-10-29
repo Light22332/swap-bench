@@ -26,6 +26,36 @@
     "status": 200,
     "type": "json"
   },
+  "GET /api/export 无参": {
+    "shape": {
+      "error": "str"
+    },
+    "status": 400,
+    "type": "json"
+  },
+  "GET /api/export?job=": {
+    "shape": {
+      "error": "str"
+    },
+    "status": 404,
+    "type": "json"
+  },
+  "GET /api/history": {
+    "shape": [
+      {
+        "cases": "int",
+        "elapsed_s": "float",
+        "garments": [
+          "str"
+        ],
+        "id": "str",
+        "passed": "int",
+        "ts": "str"
+      }
+    ],
+    "status": 200,
+    "type": "json"
+  },
   "GET /api/job/<id>": {
     "shape": {
       "cases": [
@@ -68,6 +98,8 @@
         "judge_mode": "str",
         "total_generate_s": "int"
       },
+      "person": "str",
+      "person_url": "str",
       "replayed": "bool",
       "state": "str"
     },

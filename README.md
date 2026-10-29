@@ -14,6 +14,7 @@
 - **用起来**：放两张图，点一下，等 55 秒
 - **质检**：5 项真判定——人脸相似度、身体区域变化、手部数量、背景主色、人脸数量
 - **不装的**：手指粘连、文字水印判不了就不列；手这一项只数得清"在不在"
+- **看与取**：结果格上按住看原片，右上角「存档」翻以前的单子，工序条右侧一次打包下载
 - **证据**：每次尝试一行 JSONL，批次给出合格率、重试次数、失败原因分布
 - **跑在哪**：本地 16GB 显存，零云成本；云端后端接口也留了
 
@@ -286,24 +287,36 @@ python tools/run_batch.py \
 
 ```
 app/
-  graph.py            把一次请求翻译成 ComfyUI API 图（手写，不用 UI 导出的 JSON）
-  pipeline.py         整理参考图 → 生成 → 质检 → 补约束 → 重试 → 挑最优
-  prep.py             参考图裁剪：先量再决定按衣服框裁还是按比例裁（这层是效果的关键）
-  parse_clothes.py    人像解析：SegFormer-B2 找出身上的衣服在哪（现成开源模型）
-  store.py            JSONL 证据层 + 批次指标
-  server.py           零依赖 HTTP 服务（stdlib，不引 FastAPI）
-  adapters/
-    base.py           GenRequest / GenResult，把成本·延迟·失败类型摊开
-    comfyui.py        本地后端：提交、轮询、取图、失败分类
-    cloud.py          云端后端：OpenAI images/edits 形态
-  judge/
-    base.py           5 项检查定义 + 失败项→约束的映射表
-    faces.py          人脸检测与特征比对（YuNet + SFace）
-    hands.py          手掌检测 + 21 点关键点（MediaPipe 模型，走 OpenCV DNN）
-    rules.py          逐项判定实现
+  core/               契约层：检查定义、配置默认值、路径、JSONL 证据层、Job
+    checks.py         5 项检查的定义与加权
+    config.py         config.json 读取 + 默认值（唯一来源）
+    paths.py          项目内路径
+    store.py          JSONL 读写与批次指标
+    models.py         Job / Case 的数据形状
+  capability/         能力层：每个模块都能脱离流水线单独调用
+    generate/
+      graph.py        把一次请求翻译成 ComfyUI API 图（手写，不用 UI 导出的 JSON）
+      comfyui.py      本地后端：提交、轮询、取图、失败分类
+      cloud.py        云端后端：OpenAI images/edits 形态（未用真实 key 验证）
+    judge/
+      faces.py        人脸检测与特征比对（YuNet + SFace）
+      hands.py        手掌检测 + 21 点关键点（MediaPipe 模型，走 OpenCV DNN）
+      rules.py        逐项判定实现
+    prep/
+      crop.py         参考图裁剪：先量再决定按衣服框裁还是按比例裁
+      parse_clothes.py 人像解析：SegFormer-B2 找出身上的衣服在哪
+  pipeline/           编排层
+    policy.py         要不要继续、用什么打法（纯函数）
+    select.py         最后挑哪张（纯函数）
+    runner.py         串起来跑，负责 IO 和记账
+  api/                HTTP 层
+    server.py         骨架：分发与写字节
+    routes/           config / jobs / run / upload / static
+    state.py          配置快照与在跑的任务表
+    history.py        从 JSONL 还原、存档列表、打包导出
 electron/
   main.js             桌面外壳：起服务 → 开窗口 → 退出收尾
-web/                  index.html + css/ 五个文件 + js/ 六个原生 ES 模块，无框架、无构建
+web/                  index.html + css/ 六个文件 + js/ 六个原生 ES 模块，无框架、无构建
 models/               人脸两个 onnx + 手部两个 onnx + segformer_b2_clothes/（都不进版本库）
 tools/                check.py（一键检查）、replay.py（历史回放）、api_baseline.py（接口形状对比）、run_batch.py（命令行批量）
 runs/                 每次任务的 JSONL 检验单
