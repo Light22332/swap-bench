@@ -339,7 +339,15 @@ python tools/run_batch.py \
 五项判定全过——人脸 0.87、身体区域变化 60%、两只手 0.98 / 0.99、背景主色距离 11、结果里 1 张脸。
 
 尺寸和单价不在页面上，在 `config.json`：`cloud.size`（留空：百炼按 `1024*1024`，OpenAI 形状按 `1024x1536`）、
-`cloud.price_per_image`（填了就按张记进 `GenResult.cost`）。要手动指定形状用 `cloud.shape`（`auto` / `openai` / `dashscope`）。
+`cloud.price_per_image`（填了就按张记进 `GenResult.cost`）、`cloud.price_currency`（`USD` / `CNY`，决定页面上用哪个符号）。
+要手动指定形状用 `cloud.shape`（`auto` / `openai` / `dashscope`）。
+
+**花销是算出来的，不是估的：** 每次生成按张数乘单价，记在该次尝试的 JSONL 里，再汇总成这批的
+`total_cost`。页脚会多一格「这次花的钱」，检验单的技术细节每次生成后面跟单价，「存档」里每个单子带
+花费、顶上写云端累计。
+
+`qwen-image-2.1-pro` 的官方价是 **$0.035333 / 张**（[百炼文档](https://docs.modelstudio.console.alibabacloud.com/en/model-studio/qwen-image-2-1-pro.md)，
+中国区，2026-10-30 查的），`config.json` 里已经按这个数填好了。换模型记得改这两行，不然算出来的价格是旧模型的。
 
 ---
 

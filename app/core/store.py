@@ -43,7 +43,7 @@ class Store:
         return sorted(f[:-6] for f in os.listdir(self.root) if f.endswith(".jsonl"))
 
 
-def compute_metrics(cases, judge_mode):
+def compute_metrics(cases, judge_mode, cost_currency="USD"):
     """一批结束后的汇总。这些数字就是报告里能写的那几行。"""
     total = len(cases)
     first_pass = sum(1 for c in cases if c.get("first_attempt_passed"))
@@ -51,6 +51,8 @@ def compute_metrics(cases, judge_mode):
     attempts = [c.get("attempts_used", 0) for c in cases if c.get("attempts_used")]
     latencies = [a.get("latency_s", 0) for c in cases for a in c.get("attempts", [])
                  if a.get("stage") == "generate"]
+    paid = [a.get("cost", 0) or 0 for c in cases for a in c.get("attempts", [])
+            if a.get("stage") == "generate"]
 
     reasons = {}
     for c in cases:
@@ -70,6 +72,8 @@ def compute_metrics(cases, judge_mode):
         "escape_attempts": escapes,
         "avg_generate_s": round(sum(latencies) / len(latencies), 1) if latencies else 0,
         "total_generate_s": round(sum(latencies), 1),
+        "total_cost": round(sum(paid), 4),
+        "cost_currency": cost_currency,
         "judge_mode": judge_mode,
         "failure_reasons": dict(sorted(reasons.items(), key=lambda kv: -kv[1])),
     }

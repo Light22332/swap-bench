@@ -44,6 +44,7 @@
     "shape": [
       {
         "cases": "int",
+        "cost": "float",
         "elapsed_s": "float",
         "garments": [
           "str"
@@ -114,7 +115,14 @@
     "type": "json"
   },
   "GET /api/jobs": {
-    "shape": [],
+    "shape": [
+      {
+        "cases": "int",
+        "elapsed_s": "float",
+        "id": "str",
+        "state": "str"
+      }
+    ],
     "status": 200,
     "type": "json"
   },
@@ -122,9 +130,11 @@
     "shape": {
       "avg_attempts": "float",
       "cases": "int",
+      "cost_currency": "str",
       "final_pass_rate": "float",
       "first_pass_rate": "float",
-      "jobs": "int"
+      "jobs": "int",
+      "total_cost": "float"
     },
     "status": 200,
     "type": "json"

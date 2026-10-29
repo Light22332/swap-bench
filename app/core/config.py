@@ -17,6 +17,7 @@ DEFAULTS = {
         "shape": "auto",            # auto / openai / dashscope：auto 看地址里有没有 aliyuncs.com
         "size": "",                 # 留空按竖版人像给 1024x1536（百炼给 1024*1024）
         "price_per_image": 0.0,     # 填了就把单张成本记进 GenResult.cost
+        "price_currency": "USD",    # 页面上按这个符号显示，只有 USD / CNY 走不同符号
     },
     "server": {"host": "127.0.0.1", "port": 8770},
     "backend": "comfyui",

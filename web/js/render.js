@@ -237,8 +237,9 @@ function renderDocket(c) {
     const li = document.createElement('li');
     const tag = a.mode === 'escape' ? ' · 降级重跑' : '';
     if (a.stage === 'generate') {
+      const spent = a.cost ? ` · ${money(a.cost, curOf())}` : '';
       li.textContent = a.ok
-        ? `第 ${a.attempt} 次${tag} · 生成 ${a.latency_s.toFixed(1)}s · seed ${a.seed ?? '—'}`
+        ? `第 ${a.attempt} 次${tag} · 生成 ${a.latency_s.toFixed(1)}s · seed ${a.seed ?? '—'}${spent}`
         : `第 ${a.attempt} 次${tag} · 生成失败（${a.error_kind || '未知'}）`;
     } else {
       li.textContent = `第 ${a.attempt} 次${tag} · 检查${a.passed ? '通过' : '不过 ' + (a.failures || []).length + ' 项'} · ${a.latency_s.toFixed(1)}s`;
@@ -247,6 +248,17 @@ function renderDocket(c) {
   });
   detail.append(ul);
   body.append(detail);
+}
+
+/** 钱的写法：美元用 $，人民币用 ¥；不到 1 块留三位小数，免得每张都显示 0.04。 */
+export function money(v, cur) {
+  if (!v) return '';
+  const sym = cur === 'CNY' ? '¥' : '$';
+  return sym + (v >= 1 ? v.toFixed(2) : v.toFixed(3));
+}
+
+function curOf() {
+  return (S.metrics && S.metrics.cost_currency) || 'USD';
 }
 
 function renderMetrics() {
@@ -259,6 +271,15 @@ function renderMetrics() {
     : '—';
   $('m-lat').textContent = m.avg_generate_s ? m.avg_generate_s + 's' : '—';
   $('m-total').textContent = m.total_generate_s ? m.total_generate_s + 's' : '—';
+
+  // 云端跑过才显示这一格；本地跑一直是 0，没必要占地方
+  const cell = $('m-cost-cell');
+  if (m.total_cost) {
+    cell.hidden = false;
+    $('m-cost').textContent = money(m.total_cost, curOf());
+  } else {
+    cell.hidden = true;
+  }
 }
 
 
@@ -349,7 +370,8 @@ export function renderLedger(items) {
     what.className = 'ledger-what';
     what.textContent = (j.garments || []).join('、') || '—';
     const small = document.createElement('small');
-    small.textContent = `${j.cases} 件 · ${duration(j.elapsed_s)}`;
+    small.textContent = `${j.cases} 件 · ${duration(j.elapsed_s)}`
+      + (j.cost ? ` · ${money(j.cost, (S.metrics && S.metrics.cost_currency) || 'USD')}` : '');
     what.append(small);
 
     const pass = document.createElement('span');

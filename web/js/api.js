@@ -30,6 +30,10 @@ export function getHistory() {
   return fetch('/api/history').then(json);
 }
 
+export function getMetrics() {
+  return fetch('/api/metrics').then(json);
+}
+
 export function loadSamples() {
   return fetch('/api/samples', { method: 'POST' }).then(json);
 }

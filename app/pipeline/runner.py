@@ -69,7 +69,8 @@ def run_job(job, config):
                                   "chosen": pick["attempt"], "of": len(tried),
                                   "score": verdict["score"]})
 
-    job.metrics = compute_metrics(job.cases, judge.mode)
+    job.metrics = compute_metrics(job.cases, judge.mode,
+                                  cost_currency=app_config.section(config, "cloud")["price_currency"])
     job.finished = time.time()
     job.state = "cancelled" if job.cancel_requested else "done"
     if job.cancel_requested:

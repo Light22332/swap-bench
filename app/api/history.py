@@ -84,6 +84,14 @@ def load_job(jid):
     }
 
 
+def _spent(recs, metrics=None):
+    """一次任务花了多少钱。老记录里没有 total_cost，就从每条 generate 的 cost 加起来。"""
+    metrics = metrics or {}
+    if metrics.get("total_cost"):
+        return metrics["total_cost"]
+    return round(sum((r.get("cost") or 0) for r in recs if r.get("stage") == "generate"), 4)
+
+
 def list_jobs(limit=60):
     """列出所有跑过的任务，最近的在前。只扫一遍 JSONL 的关键几行。"""
     store = _store()
@@ -110,6 +118,7 @@ def list_jobs(limit=60):
             "cases": len(by_case),
             "passed": sum(1 for v in by_case.values() if v),
             "elapsed_s": metrics.get("total_generate_s", 0),
+            "cost": _spent(recs, metrics),
         })
     out.sort(key=lambda j: j["ts"], reverse=True)
     return out[:limit]
@@ -149,14 +158,18 @@ def dump_json(obj):
 
 
 def global_metrics():
-    """扫一遍全部 runs/*.jsonl，给出全站的首轮通过率和平均重试。"""
+    """扫一遍全部 runs/*.jsonl，给出全站的首轮通过率和平均重试，以及云端累计花了多少。"""
     store = _store()
-    cases, jobs = [], 0
+    cases, jobs, spent, currency = [], 0, 0.0, "USD"
     for jid in store.all_jobs():
         recs = store.read(jid)
         if not recs:
             continue
         jobs += 1
+        end = next((r for r in recs if r.get("stage") == "job_end"), {})
+        metrics = end.get("metrics") or {}
+        spent += _spent(recs, metrics)
+        currency = metrics.get("cost_currency") or currency
         by_case = {}
         for r in recs:
             if r.get("stage") == "judge":
@@ -177,4 +190,6 @@ def global_metrics():
         "first_pass_rate": round(first / total, 3) if total else 0,
         "final_pass_rate": round(final / total, 3) if total else 0,
         "avg_attempts": round(avg_att, 2),
+        "total_cost": round(spent, 4),
+        "cost_currency": currency,
     }

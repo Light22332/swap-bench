@@ -37,7 +37,9 @@
     "base_url": "https://dashscope.aliyuncs.com/api/v1",
     "api_key": "",
     "model": "qwen-image-2.1-pro",
-    "timeout": 120
+    "timeout": 120,
+    "price_per_image": 0.035333,
+    "price_currency": "USD"
   },
   "pipeline": {
     "max_attempts": 2,

@@ -2,9 +2,9 @@
 
 启动顺序：读配置 → 有 ?job= 就还原历史，否则等用户放图 → ?demo 直接跑示例。 */
 
-import { getConfig, getHistory, getJob, loadSamples } from './api.js';
+import { getConfig, getHistory, getJob, getMetrics, loadSamples } from './api.js';
 import { $, S } from './state.js';
-import { hint, render, renderLedger, syncRun } from './render.js';
+import { hint, money, render, renderLedger, syncRun } from './render.js';
 import { addGarments, addPerson, isImage, renderChips, wireDrop } from './upload.js';
 import { startRun, stopRun } from './run.js';
 import { initSettings } from './settings.js';
@@ -106,9 +106,13 @@ async function openLedger() {
   panel.hidden = false;
   $('ledger-close').focus();
   try {
-    const items = await getHistory();
+    const [items, m] = await Promise.all([getHistory(), getMetrics()]);
     S.history = items;
     renderLedger(items);
+    const note = $('ledger-note');
+    note.textContent = m.total_cost
+      ? `点一行，把那次的结果调出来。全部 ${m.jobs} 单，云端一共花了 ${money(m.total_cost, m.cost_currency)}。`
+      : '点一行，把那次的结果调出来。';
   } catch (e) {
     renderLedger([]);
     hint('读存档失败：' + e.message, true);

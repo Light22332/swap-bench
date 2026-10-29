@@ -104,6 +104,7 @@
       <div class="metric"><span class="metric-k">平均重试</span><span class="metric-v" id="m-att">—</span></div>
       <div class="metric"><span class="metric-k">平均生成</span><span class="metric-v" id="m-lat">—</span></div>
       <div class="metric"><span class="metric-k">累计生成</span><span class="metric-v" id="m-total">—</span></div>
+      <div class="metric" id="m-cost-cell" hidden><span class="metric-k">这次花的钱</span><span class="metric-v" id="m-cost">—</span></div>
     </footer>
 
   </section>
@@ -114,7 +115,7 @@
     <h2>存档</h2>
     <button class="close" id="ledger-close" type="button" aria-label="关闭存档">×</button>
   </div>
-  <p class="ledger-note">点一行，把那次的结果调出来。</p>
+  <p class="ledger-note" id="ledger-note">点一行，把那次的结果调出来。</p>
   <ol class="ledger-list" id="ledger-list"></ol>
 </section>
 
