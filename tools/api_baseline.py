@@ -96,21 +96,34 @@ def snapshot():
     return out
 
 
+def same_shape(a, b):
+    """比结构。空数组算"和任意数组同形"——列表返回空还是满，取决于当时有没有任务。"""
+    if a == b:
+        return True
+    if isinstance(a, list) and isinstance(b, list):
+        if not a or not b:
+            return True
+        return same_shape(a[0], b[0])
+    if isinstance(a, dict) and isinstance(b, dict):
+        return a.keys() == b.keys() and all(same_shape(a[k], b[k]) for k in a)
+    return False
+
+
 def diff(old, new):
     lines = []
     for name in old:
         a, b = old.get(name), new.get(name)
-        if a == b:
-            continue
         if a is None:
             lines.append(f"{name}: 新增")
-        elif b is None:
+            continue
+        if b is None:
             lines.append(f"{name}: 消失")
-        elif a["status"] != b["status"]:
+            continue
+        if a["status"] != b["status"]:
             lines.append(f"{name}: 状态码 {a['status']} → {b['status']}")
         elif a["type"] != b["type"]:
             lines.append(f"{name}: 类型 {a['type']} → {b['type']}")
-        else:
+        elif not same_shape(a["shape"], b["shape"]):
             lines.append(f"{name}: 结构变了\n    旧 {json.dumps(a['shape'], ensure_ascii=False)[:300]}"
                          f"\n    新 {json.dumps(b['shape'], ensure_ascii=False)[:300]}")
     return lines

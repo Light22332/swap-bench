@@ -11,8 +11,6 @@ import { startRun } from './run.js';
 async function boot() {
   try {
     const cfg = await getConfig();
-    S.defaultInstruction = cfg.instruction || '';
-    $('instruction').value = S.defaultInstruction;
     $('backend-tag').textContent = cfg.backend === 'cloud' ? '云端' : '本地';
 
     const tag = $('judge-tag');

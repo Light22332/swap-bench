@@ -26,12 +26,11 @@ async function runPending(pending) {
     $('sheet').classList.add('is-empty');
   }
 
-  const instruction = $('instruction').value.trim() || S.defaultInstruction;
   try {
+    // 指令不从这里传：服务端用 config.json 里那份固定的，页面上不再给用户改
     const data = await submitRun({
       person: S.person.path,
       garments: pending.map((g) => ({ path: g.path, name: g.name })),
-      instruction,
     });
     S.job = data.job_id;
     S.pendingPaths = pending.map((g) => g.path);
