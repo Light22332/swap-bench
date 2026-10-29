@@ -42,7 +42,9 @@ const ROOT = app.isPackaged ? process.resourcesPath : path.join(__dirname, '..')
 const CONFIG_PATH = path.join(ROOT, 'config.json');
 const LOG_DIR = path.join(ROOT, 'logs');
 
-const SMOKE = process.argv.includes('--smoke');
+/* 冒烟：开发时用 --smoke，打包后 Chromium 会把 --smoke 当未知开关拒掉（报 bad option），
+   所以打包版改用环境变量 SWAP_SMOKE=1 触发。 */
+const SMOKE = process.argv.includes('--smoke') || process.env.SWAP_SMOKE === '1';
 
 let cfg = {};
 try {

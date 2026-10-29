@@ -100,29 +100,59 @@
 
 ## P2 工程化
 
-### 7. 打包成安装包
+### 回归基线（已做完）
 
-现在 `启动换装台.exe` 只是个 5KB 启动器，依赖同目录的 `node_modules`。用 electron-builder 打成正式安装包，带图标、装完开始菜单有入口。
+**做法**：`tools/regression.py` 固定八组输入（两张人像 × 四张衣服），逐组走接口真生成，
+记录合格率、首轮通过、平均重试、每项检查通过率、人脸相似度分布；`compare` 子命令对比两份报告，
+列出指标变化和翻转的组。每跑完一组就落盘，加 `--resume` 能接着跑。
 
-**代价**：要下载 electron-builder 的签名工具（国内需镜像）。
+**实测（2026-10-29 基线，`reports/base.json`）**：
 
-**验收**：在一台没装过 Node 的机器上装完能直接启动。
+| 指标 | 值 |
+|---|---|
+| 合格率 | 6/8 = 75% |
+| 首轮通过 | 5/8 = 62.5% |
+| 平均重试 | 1.62 次 |
+| 平均耗时 | 100.6 秒 |
+| 人脸相似度 | 0.776 – 0.892（阈值 0.45） |
+
+每项检查的通过率：脸 100%、衣服 100%、背景 100%、多余的人 100%、**手 75%**。
+
+两处失败都是同一件衣服（case3 橘色羽绒服），换个模特也一样：三次尝试都卡在手部，
+其余四项全过。这和之前单独观察到的一致——失败集中在"袖子接手掌"这个位置，不是随机波动。
 
 ---
 
-### 8. 云端后端实测
+### 打包（便携版已可用，安装包未成）
 
-`app/adapters/cloud.py` 按 OpenAI `images/edits` 的约定写了，但从没跑通过。有 key 之后实测一次，把延迟和单张成本写进 README。
+**做法**：electron-builder，`npm run pack` 出便携目录版，`npm run dist` 走 nsis 出安装包。
+Electron 那部分进 asar，Python 那部分（`app/`、`web/`、`run.py`、`config.json`）走 extraResources
+放到 `resources/`；`main.js` 按 `app.isPackaged` 切换根目录。
+
+**踩到的坑**：
+
+- 关掉 asar 会让 Python 包和 Electron 的 `resources/app` 撞名，两套文件混在一起；
+- `signAndEditExecutable: false` 会跳过 asar 完整性写入，打包后的 exe 启动即退；应改用 `signExecutable: false`（只跳过签名）；
+- 打包版不能再用 `--smoke`，Chromium 会当未知开关拒掉（报 bad option），改用环境变量 `SWAP_SMOKE=1`；
+- **测试时必须清掉 `ELECTRON_RUN_AS_NODE`**：这个环境变量会让打包后的 exe 以 Node 方式启动，
+  表现是"一闪就退、退出码 0"。真实双击不会有这个变量，这是我的测试方法问题，不是程序问题。
+
+**实测**：`dist/win-unpacked/换装验收台.exe` 能独立启动，界面完整（五项目检、存档、指标带），
+冒烟截图落在 `resources/outputs/electron-window.png`。
+
+**没做完**：nsis 安装包两次都卡在打包阶段（CPU 接近零、无输出），只出到 `win-unpacked`。
+下次重试前先清空 `dist/`，再带 `ELECTRON_MIRROR` 和 `ELECTRON_BUILDER_BINARIES_MIRROR` 跑。
+
+**验收（原定的）**：在一台没装 Node 的机器上装完能直接启动——没做到，缺安装包。
+
+---
+
+### 云端后端实测
+
+`app/capability/generate/cloud.py` 按 OpenAI `images/edits` 的约定写了，但从没跑通过。需要一次真 API key。
+有 key 之后实测一次，把延迟和单张成本写进 README。
 
 **验收**：成功出图一次，成本数字落到 README 的实测数据里。
-
----
-
-### 9. 回归基线
-
-现在没有任何回归测试。固定八组输入，跑一遍记录「合格率、平均重试次数、人脸相似度分布」，改代码前后对比。
-
-**验收**：`tools/regression.py` 一条命令出报告。
 
 ---
 

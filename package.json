@@ -31,7 +31,8 @@
     ],
     "win": {
       "target": ["nsis"],
-      "artifactName": "SwapBench-${version}-setup.${ext}"
+      "artifactName": "SwapBench-${version}-setup.${ext}",
+      "signExecutable": false
     },
     "nsis": {
       "oneClick": false,

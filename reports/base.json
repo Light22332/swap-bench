@@ -1,0 +1,173 @@
+{
+  "when": "2026-10-29T22:12:46",
+  "pairs": [
+    {
+      "person": "case1_person.jpg",
+      "garment": "case1_garment.jpg",
+      "job": "06ddc15897dd",
+      "state": "passed",
+      "passed": true,
+      "score": 1.0,
+      "attempts": 1,
+      "elapsed_s": 88.8,
+      "checks": {
+        "face_preserved": true,
+        "no_extra_person": true,
+        "garment_applied": true,
+        "hand_preserved": true,
+        "background_preserved": true
+      },
+      "face_sim": 0.842
+    },
+    {
+      "person": "case1_person.jpg",
+      "garment": "case3_garment.jpg",
+      "job": "f3b5fb5d9e28",
+      "state": "reworked",
+      "passed": false,
+      "score": 0.778,
+      "attempts": 3,
+      "elapsed_s": 199.4,
+      "checks": {
+        "face_preserved": true,
+        "no_extra_person": true,
+        "garment_applied": true,
+        "hand_preserved": false,
+        "background_preserved": true
+      },
+      "face_sim": 0.892
+    },
+    {
+      "person": "case1_person.jpg",
+      "garment": "case4_garment.jpg",
+      "job": "7a271a1da2c3",
+      "state": "passed",
+      "passed": true,
+      "score": 1.0,
+      "attempts": 2,
+      "elapsed_s": 110.5,
+      "checks": {
+        "face_preserved": true,
+        "no_extra_person": true,
+        "garment_applied": true,
+        "hand_preserved": true,
+        "background_preserved": true
+      },
+      "face_sim": 0.859
+    },
+    {
+      "person": "case1_person.jpg",
+      "garment": "case4_garment_crop.jpg",
+      "job": "5ed21de39b8e",
+      "state": "passed",
+      "passed": true,
+      "score": 1.0,
+      "attempts": 1,
+      "elapsed_s": 51.8,
+      "checks": {
+        "face_preserved": true,
+        "no_extra_person": true,
+        "garment_applied": true,
+        "hand_preserved": true,
+        "background_preserved": true
+      },
+      "face_sim": 0.776
+    },
+    {
+      "person": "case4_person.png",
+      "garment": "case1_garment.jpg",
+      "job": "59f692de763a",
+      "state": "passed",
+      "passed": true,
+      "score": 1.0,
+      "attempts": 1,
+      "elapsed_s": 51.7,
+      "checks": {
+        "face_preserved": true,
+        "no_extra_person": true,
+        "garment_applied": true,
+        "hand_preserved": true,
+        "background_preserved": true
+      },
+      "face_sim": 0.844
+    },
+    {
+      "person": "case4_person.png",
+      "garment": "case3_garment.jpg",
+      "job": "3287832c4dfe",
+      "state": "reworked",
+      "passed": false,
+      "score": 0.778,
+      "attempts": 3,
+      "elapsed_s": 190.8,
+      "checks": {
+        "face_preserved": true,
+        "no_extra_person": true,
+        "garment_applied": true,
+        "hand_preserved": false,
+        "background_preserved": true
+      },
+      "face_sim": 0.871
+    },
+    {
+      "person": "case4_person.png",
+      "garment": "case4_garment.jpg",
+      "job": "095f1bdb0c98",
+      "state": "passed",
+      "passed": true,
+      "score": 1.0,
+      "attempts": 1,
+      "elapsed_s": 53.9,
+      "checks": {
+        "face_preserved": true,
+        "no_extra_person": true,
+        "garment_applied": true,
+        "hand_preserved": true,
+        "background_preserved": true
+      },
+      "face_sim": 0.848
+    },
+    {
+      "person": "case4_person.png",
+      "garment": "case4_garment_crop.jpg",
+      "job": "d7e144c2f6c1",
+      "state": "passed",
+      "passed": true,
+      "score": 1.0,
+      "attempts": 1,
+      "elapsed_s": 57.8,
+      "checks": {
+        "face_preserved": true,
+        "no_extra_person": true,
+        "garment_applied": true,
+        "hand_preserved": true,
+        "background_preserved": true
+      },
+      "face_sim": 0.876
+    }
+  ],
+  "summary": {
+    "cases": 8,
+    "pass_rate": 0.75,
+    "first_pass_rate": 0.625,
+    "avg_attempts": 1.62,
+    "avg_elapsed_s": 100.6,
+    "per_check_pass_rate": {
+      "background_preserved": 1.0,
+      "face_preserved": 1.0,
+      "garment_applied": 1.0,
+      "hand_preserved": 0.75,
+      "no_extra_person": 1.0
+    },
+    "face_sim": [
+      0.776,
+      0.842,
+      0.844,
+      0.848,
+      0.859,
+      0.871,
+      0.876,
+      0.892
+    ]
+  }
+}
