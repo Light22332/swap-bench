@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 700" width="1040" height="700" role="img" aria-labelledby="t">
+  <title id="t">换装验收台的四个包：单向依赖，判定在 capability 层</title>
+
+  <style>
+    .bg { fill: #e7e6e2; }
+    .box { fill: #f7f6f3; stroke: #b9b6ad; stroke-width: 1; }
+    .box-hi { fill: #ffffff; stroke: #1f1f1f; stroke-width: 1.4; }
+    .ttl { font: 600 15px "Microsoft YaHei", "PingFang SC", system-ui, sans-serif; fill: #1f1f1f; }
+    .sub { font: 12px "Microsoft YaHei", "PingFang SC", system-ui, sans-serif; fill: #6b6862; }
+    .num { font: 600 13px ui-monospace, "Cascadia Mono", Consolas, monospace; fill: #1f1f1f; }
+    .lbl { font: 11.5px "Microsoft YaHei", "PingFang SC", system-ui, sans-serif; fill: #6b6862; }
+    .arrow { stroke: #8a867d; stroke-width: 1.2; fill: none; }
+    .h { font: 600 16px "Microsoft YaHei", "PingFang SC", system-ui, sans-serif; fill: #1f1f1f; }
+    .k { font: 600 12.5px ui-monospace, "Cascadia Mono", Consolas, monospace; fill: #1f1f1f; }
+    .v { font: 12px ui-monospace, "Cascadia Mono", Consolas, monospace; fill: #6b6862; }
+    .ok { fill: #2f6b45; }
+    .rule { stroke: #c9c6bd; stroke-width: 1; }
+  </style>
+
+  <rect class="bg" x="0" y="0" width="1040" height="700"/>
+
+  <text class="h" x="40" y="46">换装验收台 · 依赖只能往下走</text>
+  <text class="lbl" x="40" y="68">tools/check.py 里有一条检查专门盯这件事：上层能 import 下层，反过来报错。</text>
+
+  <!-- 层 -->
+  <g>
+    <rect class="box" x="40" y="94" width="520" height="74" rx="6"/>
+    <text class="ttl" x="62" y="122">web/</text>
+    <text class="sub" x="62" y="143">原生 ES 模块 + 六份 CSS，无框架、无构建；轮询 /api/job 拿进度</text>
+
+    <rect class="box" x="40" y="182" width="520" height="74" rx="6"/>
+    <text class="ttl" x="62" y="210">api/</text>
+    <text class="num" x="472" y="122" text-anchor="end">1797 行</text>
+    <text class="sub" x="62" y="231">骨架只负责分发和写字节，业务在 routes/ 的五个文件里</text>
+
+    <rect class="box" x="40" y="270" width="520" height="74" rx="6"/>
+    <text class="ttl" x="62" y="298">pipeline/</text>
+    <text class="num" x="472" y="210" text-anchor="end">699 行</text>
+    <text class="sub" x="62" y="319">要不要继续、走哪种打法、最后挑哪张，都是纯函数；runner 只管 IO</text>
+
+    <rect class="box-hi" x="40" y="358" width="520" height="98" rx="6"/>
+    <text class="ttl" x="62" y="386">capability/</text>
+    <text class="num" x="472" y="298" text-anchor="end">263 行</text>
+    <text class="sub" x="62" y="407">生成 · 判定 · 参考图整理，每块都能脱离流水线单独调</text>
+    <text class="v" x="62" y="428">generate/  graph · comfyui · cloud      judge/  faces · hands · rules</text>
+    <text class="v" x="62" y="446">prep/  crop · parse_clothes</text>
+
+    <rect class="box" x="40" y="470" width="520" height="74" rx="6"/>
+    <text class="ttl" x="62" y="498">core/</text>
+    <text class="num" x="472" y="386" text-anchor="end">1322 行</text>
+    <text class="sub" x="62" y="519">检查定义 · 配置默认值 · 路径 · JSONL 存证 · Job 的数据形状</text>
+    <text class="num" x="472" y="498" text-anchor="end">395 行</text>
+  </g>
+
+  <!-- 向下箭头 -->
+  <g class="arrow">
+    <path d="M 592 131 L 592 219"/><path d="M 588 213 L 592 219 L 596 213"/>
+    <path d="M 592 219 L 592 307"/><path d="M 588 301 L 592 307 L 596 301"/>
+    <path d="M 592 307 L 592 395"/><path d="M 588 389 L 592 395 L 596 389"/>
+    <path d="M 592 395 L 592 483"/><path d="M 588 477 L 592 483 L 596 477"/>
+  </g>
+  <text class="lbl" x="600" y="300">只能往下 import</text>
+
+  <!-- 右侧判定 -->
+  <rect class="box" x="700" y="94" width="300" height="450" rx="6"/>
+  <text class="h" x="722" y="126">五项判定</text>
+  <text class="lbl" x="722" y="148">判不了的（文字水印）不列，列了就是一排“—”</text>
+
+  <g>
+    <text class="k" x="722" y="184">脸没变</text>
+    <text class="v" x="978" y="184" text-anchor="end">余弦 ≥ 0.45</text>
+    <line class="rule" x1="722" y1="198" x2="978" y2="198"/>
+
+    <text class="k" x="722" y="222">衣服换上了</text>
+    <text class="v" x="978" y="222" text-anchor="end">身体区域 ≥ 20%</text>
+    <line class="rule" x1="722" y1="236" x2="978" y2="236"/>
+
+    <text class="k" x="722" y="260">手还在</text>
+    <text class="v" x="978" y="260" text-anchor="end">手数与原图一致</text>
+    <line class="rule" x1="722" y1="274" x2="978" y2="274"/>
+
+    <text class="k" x="722" y="298">背景没动</text>
+    <text class="v" x="978" y="298" text-anchor="end">主色距离 ≤ 30</text>
+    <line class="rule" x1="722" y1="312" x2="978" y2="312"/>
+
+    <text class="k" x="722" y="336">没有多余的人</text>
+    <text class="v" x="978" y="336" text-anchor="end">人脸数 ≤ 原图</text>
+  </g>
+
+  <text class="lbl" x="722" y="376">前两项和后两项里，脸·衣服·手是关键项：</text>
+  <text class="lbl" x="722" y="394">只有关键项不过才重试。</text>
+
+  <text class="lbl" x="722" y="424">整套判定 0.4–0.7 秒，跑在 CPU 上，</text>
+  <text class="lbl" x="722" y="442">不占生成用的显存。</text>
+
+  <text class="ok k" x="722" y="480">八组合格 6/8 · 首轮 5/8</text>
+  <text class="v" x="722" y="500">手是唯一没过满的那项（75%）</text>
+
+  <!-- 底部：返工循环 -->
+  <rect class="box" x="40" y="568" width="960" height="98" rx="6"/>
+  <text class="ttl" x="62" y="598">一次任务怎么走</text>
+  <text class="v" x="62" y="622">整理参考图 → 生成（ComfyUI，约 56 秒）→ 五项判定 → 通过就采纳</text>
+  <text class="v" x="62" y="644">不通过且是关键项 → 把失败项翻成追加约束重跑（最多 2 次）→ 还不过：指令退回原文、cfg 抬到 2.0</text>
+  <text class="v" x="978" y="598" text-anchor="end">三次都不过也不假装成功，</text>
+  <text class="v" x="978" y="616" text-anchor="end">从所有尝试里挑分数最高的那张</text>
+</svg>

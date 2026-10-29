@@ -321,6 +321,14 @@ python tools/run_batch.py \
 
 有一个会让数字翻倍的情况：**队列里压着别的任务**。ComfyUI 一次只跑一张，排在后面那次的生成会从 56 秒涨到 150 秒上下（实测两件跑了 300 秒，期间前面还有另一单在跑）。演示时点一次「开始换」就够，别连点。
 
+## 代码怎么切的
+
+![四个包的依赖方向](assets/architecture.svg)
+
+四个包 `core ← capability ← pipeline ← api`，只能往下 import，反了 `tools/check.py` 会报错。
+判定实现在 `capability/judge/`（`faces` / `hands` / `rules`），要不要继续、走哪种打法在
+`pipeline/`（纯函数，单测覆盖），HTTP 层只负责分发和写字节。
+
 ---
 
 ## 目录
