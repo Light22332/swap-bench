@@ -34,7 +34,11 @@ if (process.versions.electron && process.env.ELECTRON_RUN_AS_NODE) {
 
 const { app, BrowserWindow, shell, dialog } = require('electron');
 
-const ROOT = path.join(__dirname, '..');
+/**
+ * 打包装箱后，Python 那部分代码不在 asar 里，而是被放到 resources/ 下（见 package.json 的
+ * extraResources）。所以路径要分两种：开发时是项目根目录，打包后是 resources。
+ */
+const ROOT = app.isPackaged ? process.resourcesPath : path.join(__dirname, '..');
 const CONFIG_PATH = path.join(ROOT, 'config.json');
 const LOG_DIR = path.join(ROOT, 'logs');
 

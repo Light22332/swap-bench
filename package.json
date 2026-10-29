@@ -5,12 +5,44 @@
   "description": "本地服装换装生产线：生成 → 质检 → 返工 → 挑最优",
   "main": "electron/main.js",
   "private": true,
+  "author": "Light22332",
   "scripts": {
     "start": "electron .",
-    "smoke": "electron . --smoke"
+    "smoke": "electron . --smoke",
+    "pack": "electron-builder --win dir",
+    "dist": "electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "com.light22332.swapbench",
+    "productName": "换装验收台",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      { "from": "app", "to": "app" },
+      { "from": "web", "to": "web" },
+      { "from": "run.py", "to": "run.py" },
+      { "from": "config.json", "to": "config.json" }
+    ],
+    "win": {
+      "target": ["nsis"],
+      "artifactName": "SwapBench-${version}-setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    }
   },
   "devDependencies": {
-    "electron": "^33.0.0"
+    "electron": "^33.0.0",
+    "electron-builder": "^26.18.0"
   },
   "allowScripts": {
     "electron@33.4.11": true
