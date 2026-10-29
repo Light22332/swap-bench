@@ -88,7 +88,7 @@
   to { transform: translateX(4px); opacity: 0.35; }
 }
 
-/* 印相台：零间距网格，只有发丝线 */
+/* 印相台：相纸一张张摆在台面上，每张带一块硬边墨影 */
 
 .sheet {
   flex: 0 0 auto;
@@ -96,8 +96,8 @@
   grid-template-columns: repeat(auto-fit, minmax(250px, 400px));
   justify-content: start;
   align-content: start;
-  gap: 1px;
-  background: var(--line);
+  gap: 18px;
+  padding: 2px 8px 18px 2px;   /* 右边和下边留出墨影的位置 */
   border-bottom: 1px solid var(--rule);
   width: auto;
   max-width: 100%;
@@ -110,6 +110,7 @@
   width: auto;
   min-height: 300px;
   place-items: center;
+  padding: 0;
 }
 
 .sheet-empty {
@@ -124,21 +125,33 @@
   position: relative;
   margin: 0;
   padding: 0;
-  border: 0;
+  border: 1px solid rgba(27, 42, 51, 0.30);
   font: inherit;
   color: inherit;
   text-align: left;
   background: var(--table);
+  /* 硬边墨影：不模糊，一块实心偏移的墨色，像印刷套版差了一点 */
+  box-shadow: 6px 6px 0 rgba(27, 42, 51, 0.13);
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  transition: background 140ms ease;
+  transition: background 140ms ease, box-shadow 120ms ease, transform 120ms ease;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
 
-.cell:hover { background: rgba(255, 255, 255, 0.42); }
-.cell:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+.cell:hover {
+  background: rgba(255, 255, 255, 0.4);
+  box-shadow: 3px 3px 0 rgba(27, 42, 51, 0.13);
+  transform: translate(3px, 3px);
+}
+
+.cell:active {
+  box-shadow: none;
+  transform: translate(6px, 6px);
+}
+
+.cell:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
 /* 每一格：图 + 左下角编号，底下一行虚线撕口 */
 

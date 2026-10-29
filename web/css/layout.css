@@ -225,23 +225,34 @@
   color: var(--table);
   background: var(--ink);
   border: 1px solid var(--ink);
+  box-shadow: 4px 4px 0 rgba(27, 42, 51, 0.22);
   padding: 12px;
   margin-bottom: 9px;
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+  transition: background 140ms ease, color 140ms ease, border-color 140ms ease,
+              transform 90ms ease, box-shadow 90ms ease;
 }
 
+/* 和相纸同一套逻辑：按下去那块墨影被吃掉 */
 .go:hover:not(:disabled) {
   background: var(--table);
   color: var(--ink);
+  box-shadow: 2px 2px 0 rgba(27, 42, 51, 0.22);
+  transform: translate(2px, 2px);
+}
+
+.go:active:not(:disabled) {
+  transform: translate(4px, 4px);
+  box-shadow: none;
 }
 
 .go:disabled {
   background: transparent;
   color: var(--ash);
   border-color: var(--line);
+  box-shadow: none;
   cursor: not-allowed;
 }
 

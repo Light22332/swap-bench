@@ -79,14 +79,16 @@
   color: var(--table);
   background: var(--ink);
   border: 1px solid var(--ink);
+  box-shadow: 3px 3px 0 rgba(27, 42, 51, 0.22);
   padding: 8px 18px;
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  transition: background 140ms ease, color 140ms ease;
+  transition: background 140ms ease, color 140ms ease, transform 90ms ease, box-shadow 90ms ease;
 }
 
-.set-save:hover { background: var(--table); color: var(--ink); }
+.set-save:hover { background: var(--table); color: var(--ink); transform: translate(2px, 2px); box-shadow: 1px 1px 0 rgba(27, 42, 51, 0.22); }
+.set-save:active { transform: translate(3px, 3px); box-shadow: none; }
 .set-save:focus-visible { outline: 2px solid var(--seal); outline-offset: 2px; }
 
 .set-msg {
