@@ -1,8 +1,8 @@
 from .base import CHECKS, CHECK_INDEX, DROPPED, blank_verdict, fix_clauses, summarize
-from . import faces, rules
+from . import faces, hands, rules
 
 __all__ = ["CHECKS", "CHECK_INDEX", "DROPPED", "blank_verdict", "fix_clauses",
-           "summarize", "faces", "rules", "make_judge"]
+           "summarize", "faces", "hands", "rules", "make_judge"]
 
 
 def make_judge(cfg):

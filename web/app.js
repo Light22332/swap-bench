@@ -30,14 +30,16 @@ async function boot() {
     $('backend-tag').textContent = cfg.backend === 'cloud' ? '云端' : '本地';
 
     const tag = $('judge-tag');
-    if (cfg.judge && cfg.judge.face_models) {
-      tag.textContent = '自动检查 4 项';
-      tag.title = '脸没变、衣服换上了、背景没动、没有多余的人。手部和文字需人看一眼';
-    } else {
-      tag.textContent = '自动检查 2 项';
-      tag.classList.add('is-warn');
-      tag.title = '缺少人脸模型文件，只能检查衣服和背景';
-    }
+    const j = cfg.judge || {};
+    const names = [];
+    if (j.face_models) names.push('脸没变');
+    names.push('衣服换上了');
+    if (j.hand_models) names.push('手还在');
+    names.push('背景没动');
+    if (j.face_models) names.push('没有多余的人');
+    tag.textContent = `自动检查 ${names.length} 项`;
+    tag.title = names.join('、') + '。文字水印需人看一眼';
+    if (names.length < 5) tag.classList.add('is-warn');
   } catch (e) {
     hint('连不上服务：' + e.message, true);
     return;
@@ -369,7 +371,8 @@ const STAMP = {
   pending: ['等待', 'is-live'],
   running: ['正在换', 'is-live'],
   passed: ['通过', 'is-pass'],
-  reworked: ['返工通过', 'is-rework'],
+  // reworked = 试了不止一次、最后还是没过（选中的那张也没通过），别写成"返工通过"
+  reworked: ['返工未过', 'is-rework'],
   rejected: ['没换成', 'is-rejected'],
   failed: ['失败', 'is-rejected'],
 };
@@ -439,12 +442,13 @@ function renderSheet() {
 const CHECK_LABELS = {
   face_preserved: '脸没变',
   garment_applied: '衣服换上了',
+  hand_preserved: '手还在',
   background_preserved: '背景没动',
   no_extra_person: '没有多余的人',
 };
 
-const CHECK_ORDER = ['face_preserved', 'garment_applied', 'background_preserved',
-                     'no_extra_person'];
+const CHECK_ORDER = ['face_preserved', 'garment_applied', 'hand_preserved',
+                     'background_preserved', 'no_extra_person'];
 
 function renderDocket(c) {
   const box = $('docket');

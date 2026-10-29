@@ -1,12 +1,13 @@
 """本地质检（真判定，不糊弄）。
 
-四项：
+五项：
   脸没变        人脸识别比对，余弦相似度
   衣服换上了     身体区域的像素变化量
+  手还在        手掌检测 + 关键点复核，比原图和结果的手数
   背景没动       从原图推平坦区域，比背景主色
   没有多余的人   人脸数量
 
-判不了的（手部结构、文字水印）不在这里装样子，见 base.DROPPED。
+判不了的（文字水印）不在这里装样子，见 base.DROPPED。
 
 背景这一项放弃了"逐块对齐"的做法：生成图经常重新构图，
 块对不上就会把正常结果判成背景出错。改成各自取背景主色再比距离，
@@ -16,8 +17,8 @@ import time
 
 from PIL import Image, ImageChops, ImageStat
 
-from . import faces
-from .base import blank_verdict, summarize
+from . import faces, hands
+from .base import CHECKS, blank_verdict, summarize
 
 GRID = 16
 SMALL = 128
@@ -139,6 +140,48 @@ def evaluate(person_path, result_path, garment_path=None, models_dir=None, **_):
         "reason": f"身体区域变化 {changed * 100:.0f}%",
     }
 
+    # ---- 手 ----
+    if models_dir and hands.load(models_dir):
+        ph = hands.analyze(person_path)
+        rh = hands.analyze(result_path)
+        if ph is None or rh is None:
+            checks["hand_preserved"] = {
+                "pass": None, "reason": hands.why() or "手部检测没跑起来",
+            }
+        elif ph["count"] == 0:
+            checks["hand_preserved"] = {
+                "pass": None, "reason": "原图里没检出手（被挡住或不在画面里），无法比对",
+            }
+        else:
+            a, b = ph["count"], rh["count"]
+            weak = rh["weak"]
+            if a == b:
+                confs = " / ".join(f"{h['conf']:.2f}" for h in rh["hands"]) or "—"
+                checks["hand_preserved"] = {
+                    "pass": True, "reason": f"原图 {a} 只手，结果 {b} 只（复核置信度 {confs}）",
+                }
+            elif b < a and weak:
+                # 一级找到了框、二级不认：手还在那个位置，但形状不像手
+                low = min(w["conf"] for w in weak)
+                checks["hand_preserved"] = {
+                    "pass": False,
+                    "reason": f"原图 {a} 只手，结果只有 {b} 只通过复核；另外 {len(weak)} 处"
+                              f"像手但形状不对（复核 {low:.2f}，门槛 {hands.POSE_CONF}），"
+                              "常见于手指粘连或变形",
+                    "counts": [a, b], "weak_conf": round(low, 3),
+                }
+            else:
+                checks["hand_preserved"] = {
+                    "pass": False,
+                    "reason": f"原图 {a} 只手，结果 {b} 只（{'少了' if b < a else '多了'} "
+                              f"{abs(a - b)} 只）",
+                    "counts": [a, b],
+                }
+    else:
+        checks["hand_preserved"] = {
+            "pass": None, "reason": hands.why() or "手部模型未加载",
+        }
+
     # ---- 背景 ----
     p_bg, p_n = background_color(p)
     r_bg, r_n = background_color(r)
@@ -155,6 +198,6 @@ def evaluate(person_path, result_path, garment_path=None, models_dir=None, **_):
         }
 
     judged = sum(1 for c in checks.values() if c.get("pass") is not None)
-    note = (f"本地质检：{judged}/4 项可自动判定；"
-            "手部结构、文字水印不做自动检查，需人看一眼")
+    note = (f"本地质检：{judged}/{len(CHECKS)} 项可自动判定；"
+            "文字水印不做自动检查，需人看一眼")
     return summarize(checks, "local", note=note, latency_s=time.time() - t0)

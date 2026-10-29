@@ -195,9 +195,15 @@ class Handler(BaseHTTPRequestHandler):
                 os.path.isfile(os.path.join(ROOT, cfg.get("models_dir", "models"), f))
                 for f in ("face_detection_yunet.onnx", "face_recognition_sface.onnx")
             )
+            hand_models = all(
+                os.path.isfile(os.path.join(ROOT, cfg.get("models_dir", "models"), f))
+                for f in ("palm_detection_mediapipe_2023feb.onnx",
+                          "handpose_estimation_mediapipe_2023feb.onnx")
+            )
             return self._json({
                 "backend": cfg.get("backend"),
-                "judge": {"mode": "local", "face_models": face_models},
+                "judge": {"mode": "local", "face_models": face_models,
+                          "hand_models": hand_models},
                 "prep": cfg.get("prep", {}).get("enabled", True),
                 "max_attempts": cfg.get("pipeline", {}).get("max_attempts", 2),
                 "instruction": cfg.get("instruction", ""),
