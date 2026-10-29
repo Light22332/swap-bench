@@ -75,7 +75,7 @@ app/
     routes/            config / jobs / run / upload / static，各导出 handle_get / handle_post
 web/
   index.html
-  css/                 tokens.css  base.css  layout.css  bench.css  docket.css
+  css/                 tokens.css  layout.css  bench.css  docket.css  responsive.css（按加载顺序排队）
   js/
     api.js             所有 fetch 收在这里
     state.js           S 与它的读写
@@ -84,9 +84,10 @@ web/
     render.js          rail / sheet / docket / metrics 四块渲染
     main.js            启动与事件绑定
 tools/
-  check.py             一键检查（单测 + 编译 + 冒烟）
+  check.py             一键检查（编译 + 依赖方向 + 配置入口 + 单测 + 判定冒烟）
   replay.py            历史回放对比
-  tests/               test_policy.py  test_select.py  test_crop.py  test_rules.py
+  api_baseline.py      六个接口的响应形状基线
+  tests/               test_policy.py（策略纯函数）test_runner.py（编排集成）
 ```
 
 依赖方向只有一条：`api → pipeline → capability → core`。
@@ -260,6 +261,33 @@ Phase 0 和 1 不改变任何行为，可以放心做；Phase 2 是唯一需要�
 - 新增 `tools/api_baseline.py`：改之前把 11 个接口的状态码和 JSON 键结构录成 `tools/api_baseline.json`，改完一条命令比对
 - 验收：`api_baseline.py check` 报告 11 个接口结构一致；`check.py` 8/8；`replay.py` 翻转 0；页面深链实测五行判定正常
 - 这一步的规矩是**接口不变**：路由搬走、锁搬走，响应体一个键都没动
+
+**Phase 5 完成（2026-10-29）**
+
+- `web/app.js`（610 行）拆成 `js/` 六个原生 ES 模块：`state` / `api` / `render` / `upload` / `run` / `main`，全部用 `import` 连接，没有打包步骤
+- `web/style.css`（769 行）按原来的顺序切成 `css/` 五个文件，加载顺序不变，层叠结果不变
+- `index.html` 换成 `type="module"`，`/static/` 路由改成允许一层子目录，并强制 `.js` 的 MIME（Windows 上注册表可能把它猜成 `text/plain`，浏览器会拒绝加载模块）
+- 顺手修了一个老 bug：删掉一件衣服后提示语还写着"要换 2 件"，因为删除回调没调 `syncRun()`
+- 验收：浏览器实测五条路径（首屏、放图、删图、深链、点格子看检验单）无控制台报错；`check.py` 8/8；`replay.py` 翻转 0；`api_baseline.py` 11 个接口一致
+
+---
+
+## 十、收尾
+
+六个阶段全部完成。整理前后的对照：
+
+| | 之前 | 之后 |
+|---|---|---|
+| 最大文件 | 769 行（style.css） | 311 行（layout.css） |
+| 目录 | `app/` 根散着 6 个模块 + 2 个子包 | 四个包，根目录下没有散装模块 |
+| 配置默认值 | 散在四个文件 | 只在 `core/config.py` |
+| 策略 | 埋在 `run_job` 的循环里 | `policy.py` / `select.py` 纯函数，23 条断言 |
+| 依赖方向 | 无约束 | `check.py` 每次自动校验 |
+| 接口 | 无基线 | 11 个接口形状有基线文件 |
+| 判定回归 | 无 | `replay.py` 20 次尝试、翻转 0 |
+
+`ROADMAP.md` 里的 P1（历史记录页、原图对比、批量导出）还没做，那属于功能，不属于这次整理。
+
 
 
 

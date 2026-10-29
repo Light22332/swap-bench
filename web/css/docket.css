@@ -1,0 +1,182 @@
+/* 质检章、检验单、底部的指标带。 */
+
+/* 质检章：全页唯一允许抢眼的东西 */
+
+.stamp {
+  position: absolute;
+  right: 14px;
+  bottom: 44px;
+  transform: rotate(-6deg);
+  transform-origin: center;
+  font-family: var(--sans);
+  font-size: 11.5px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  padding: 3px 8px 2px;
+  border: 2px solid currentColor;
+  background: rgba(247, 246, 243, 0.86);
+  color: var(--ash);
+  opacity: 0.95;
+  pointer-events: none;
+}
+
+.stamp.is-pass { color: var(--pass); }
+.stamp.is-rework { color: var(--rework); }
+.stamp.is-rejected { color: var(--seal); }
+.stamp.is-live { color: var(--ash); border-style: dashed; }
+
+.stamp.landed { animation: land 260ms cubic-bezier(.2, .9, .25, 1.1) both; }
+
+@keyframes land {
+  from { opacity: 0; transform: rotate(-22deg) scale(1.5); }
+  to   { opacity: 0.9; transform: rotate(-8deg) scale(1); }
+}
+
+/* 检验单 */
+
+.docket {
+  padding: 16px var(--gut) 18px;
+  border-bottom: 1px solid var(--rule);
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.docket-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.docket-head h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.docket-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.save {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--table);
+  background: var(--ink);
+  padding: 6px 12px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.save:hover { background: var(--seal); }
+
+.save:focus-visible {
+  outline: 2px solid var(--seal);
+  outline-offset: 2px;
+}
+
+.close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--ash);
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.close:hover { color: var(--ink); }
+
+.docket-body {
+  display: block;
+}
+
+.check-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 2px 24px;
+}
+
+.check {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.check-mark { font-family: var(--num); font-weight: 600; }
+.check.is-pass .check-mark { color: var(--pass); }
+.check.is-fail .check-mark { color: var(--seal); }
+.check.is-none .check-mark { color: var(--ash); }
+.check.is-none .check-label { color: var(--ash); }
+
+.check-label { font-weight: 600; }
+
+.raw {
+  margin-top: 10px;
+  font-size: 11.5px;
+  color: var(--ash);
+}
+
+.raw summary { cursor: pointer; }
+.raw summary:hover { color: var(--ink); }
+
+.attempts {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--num);
+  font-size: 11px;
+  color: var(--ash);
+  font-variant-numeric: tabular-nums;
+}
+
+.attempts li {
+  padding: 2px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.docket-note {
+  margin: 10px 0 0;
+  font-size: 11.5px;
+  color: var(--rework);
+}
+
+/* 指标带 */
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border-top: 1px solid var(--rule);
+  margin-top: auto;
+}
+
+.metric {
+  padding: 11px var(--gut) 13px 12px;
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.metric:last-child { border-right: none; }
+
+.metric-k {
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--ash);
+}
+
+.metric-v {
+  font-family: var(--num);
+  font-size: 19px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+

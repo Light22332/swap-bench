@@ -1,0 +1,75 @@
+/* 变量、字体、重置。所有颜色和尺寸的源头，改主题只改这里。 */
+
+/* 换装验收台
+   视觉比喻：摄影棚的看片台。
+   亮灰亚克力台面 + 墨线 + 红蜡笔盖章。零圆角、零阴影、图与图之间只有发丝线。
+
+   颜色只有六个，其余全是它的透明度变体。
+*/
+
+:root {
+  --table: #E7E6E2;
+  --ink:   #16181A;
+  --ash:   #8A8F94;
+  --seal:  #A6232A;
+  --pass:  #2F5D4F;
+  --rework:#B07D2B;
+
+  --line:  rgba(22, 24, 26, 0.14);
+  --rule:  rgba(22, 24, 26, 0.42);
+  --veil:  rgba(231, 230, 226, 0.86);
+
+  --sans: "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", sans-serif;
+  --num:  Bahnschrift, "DIN Alternate", "Segoe UI", sans-serif;
+
+  --gut: 22px;
+}
+
+* { box-sizing: border-box; }
+
+[hidden] { display: none !important; }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip {
+  position: absolute;
+  left: -9999px;
+  top: 8px;
+  z-index: 10;
+  padding: 8px 14px;
+  background: var(--ink);
+  color: var(--table);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.skip:focus {
+  left: 12px;
+}
+
+html, body {
+  margin: 0;
+  background: var(--table);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 100vh;
+}
+

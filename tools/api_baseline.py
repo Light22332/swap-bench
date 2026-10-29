@@ -75,7 +75,7 @@ def probes():
         "GET /api/job/<id>": ("GET", f"/api/job/{job}", None),
         "GET /api/job/不存在": ("GET", "/api/job/nosuchjob", None),
         "GET /img?path=": ("GET", "/img?path=" + urllib.parse.quote("outputs/page.png"), None),
-        "GET /static/app.js": ("GET", "/static/app.js", None),
+        "GET /static/js/main.js": ("GET", "/static/js/main.js", None),
         "GET /不存在": ("GET", "/no/such/path", None),
         "POST /api/upload": ("POST", "/api/upload", {"name": "probe.png", "data": PNG_1PX}),
         "POST /api/run 空": ("POST", "/api/run", {}),

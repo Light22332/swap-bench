@@ -102,7 +102,7 @@
     "status": 200,
     "type": "image/png"
   },
-  "GET /static/app.js": {
+  "GET /static/js/main.js": {
     "shape": "binary",
     "status": 200,
     "type": "text/javascript"

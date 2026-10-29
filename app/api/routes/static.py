@@ -1,11 +1,23 @@
-﻿"""闈欐€佽祫婧愶細椤甸潰銆佸墠绔枃浠躲€佸浘鐗囥€?
-椤甸潰鍜屽墠绔唬鐮佷竴鐩村湪鏀癸紝鎵€浠ュ甫 no-cache锛涘浘鐗囧厑璁哥紦瀛樹袱鍒嗛挓銆?"""
+"""静态资源：页面、前端文件（css/ 与 js/）、图片。
+
+前端用浏览器原生 ES 模块，没有构建步骤，所以这里必须：
+  - 允许多一层子目录（/static/js/main.js）
+  - 仍然把路径钉死在 web/ 里面，防穿越
+页面和前端代码一直在改，所以带 no-cache；图片允许缓存两分钟。
+"""
+import mimetypes
 import os
-import re
 
 from ...core import paths
 
-NAME_OK = re.compile(r"[A-Za-z0-9_.\-]+")
+# Windows 注册表里 .js 有时被猜成 text/plain，浏览器会拒绝加载 ES 模块
+FIXED_TYPES = {
+    ".js": "text/javascript; charset=utf-8",
+    ".mjs": "text/javascript; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
+    ".html": "text/html; charset=utf-8",
+    ".json": "application/json; charset=utf-8",
+}
 
 
 def handle(req):
@@ -14,14 +26,20 @@ def handle(req):
         req.file(os.path.join(paths.WEB, "index.html"), cache="no-cache")
         return True
     if p.startswith("/static/"):
-        name = p[len("/static/"):]
-        if not NAME_OK.fullmatch(name):
+        rel = p[len("/static/"):]
+        full = paths.inside(os.path.join("web", rel))
+        if not full or not os.path.isfile(full):
             req.json({"error": "bad name"}, 400)
             return True
-        req.file(os.path.join(paths.WEB, name), cache="no-cache")
+        req.file(full, cache="no-cache", ctype=content_type(full))
         return True
     if p == "/img":
-        req.file(paths.inside(req.param("path")))
+        img = paths.inside(req.param("path"))
+        req.file(img, ctype=content_type(img) if img else None)
         return True
     return False
 
+
+def content_type(path):
+    ext = os.path.splitext(path)[1].lower()
+    return FIXED_TYPES.get(ext) or mimetypes.guess_type(path)[0] or "application/octet-stream"

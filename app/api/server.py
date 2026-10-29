@@ -49,11 +49,11 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
-    def _file(self, path, cache="max-age=120"):
+    def _file(self, path, cache="max-age=120", ctype=None):
         if not path or not os.path.isfile(path):
             self._json({"error": "not found", "path": path}, 404)
             return
-        ctype = mimetypes.guess_type(path)[0] or "application/octet-stream"
+        ctype = ctype or mimetypes.guess_type(path)[0] or "application/octet-stream"
         with open(path, "rb") as f:
             self._bytes(f.read(), ctype, cache)
 

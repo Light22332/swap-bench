@@ -303,9 +303,9 @@ app/
     rules.py          逐项判定实现
 electron/
   main.js             桌面外壳：起服务 → 开窗口 → 退出收尾
-web/                  index.html / style.css / app.js，无框架
+web/                  index.html + css/ 五个文件 + js/ 六个原生 ES 模块，无框架、无构建
 models/               人脸两个 onnx + 手部两个 onnx + segformer_b2_clothes/（都不进版本库）
-tools/                smoke_test.py（单次验证）、run_batch.py（命令行批量）、test_pipeline_escape.py（降级策略，不用 GPU）
+tools/                check.py（一键检查）、replay.py（历史回放）、api_baseline.py（接口形状对比）、run_batch.py（命令行批量）
 runs/                 每次任务的 JSONL 检验单
 启动换装台.exe        双击启动（无黑窗口）
 启动换装台.bat        同一件事的 bat 版，exe 不能用时兜底

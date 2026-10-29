@@ -24,5 +24,5 @@ class Request:
     def json(self, obj, code=200):
         self.handler._json(obj, code)
 
-    def file(self, path, cache="max-age=120"):
-        self.handler._file(path, cache)
+    def file(self, path, cache="max-age=120", ctype=None):
+        self.handler._file(path, cache, ctype)
