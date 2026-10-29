@@ -14,5 +14,11 @@ models/segformer_b2_clothes/
 outputs/**
 !outputs/page.png
 !outputs/electron-window.png
+# 本机私有的配置和密钥：settings 面板填的 key 就落在这里，不进版本库
 config.local.json
+*.local.json
+.env
+.env.*
+*.pem
+*.key
 发布到git.bat

@@ -22,7 +22,11 @@ def _all_present(folder, names):
 
 def handle_get(req):
     if req.path == "/api/settings":
-        req.json(app_config.settings_snapshot(state.get_config()))
+        snap = app_config.settings_snapshot(state.get_config())
+        # 密钥不回传给页面：接口响应会进截图、日志、接口基线文件，一个都不该带上它
+        snap["_api_key_set"] = bool(snap.get("cloud.api_key"))
+        snap["cloud.api_key"] = ""
+        req.json(snap)
         return True
 
     if req.path != "/api/config":
@@ -59,7 +63,10 @@ def handle_post(req):
 
 def _save_settings(req):
     """改地址这类设置：写进 config.json，立刻生效，不用重启。"""
-    data = req.body() or {}
+    data = dict(req.body() or {})
+    # 页面拿不到已存的密钥，所以留空一律当"不改"，免得一次保存把密钥抹掉
+    if not (data.get("cloud.api_key") or "").strip():
+        data.pop("cloud.api_key", None)
 
     backend = data.get("backend")
     if backend not in (None, "", "comfyui", "cloud"):

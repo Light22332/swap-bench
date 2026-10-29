@@ -323,6 +323,25 @@ python tools/run_batch.py \
 
 有一个会让数字翻倍的情况：**队列里压着别的任务**。ComfyUI 一次只跑一张，排在后面那次的生成会从 56 秒涨到 150 秒上下（实测两件跑了 300 秒，期间前面还有另一单在跑）。演示时点一次「开始换」就够，别连点。
 
+## 密钥放在哪
+
+「设置」里填的云端密钥不写进 `config.json`——那个文件在版本库里。它单独落在 `config.local.json`，
+这个文件被 `.gitignore` 挡着，`config.py` 读配置时会把它叠在 `config.json` 上面。
+
+四道闸，任何一道单独生效都够：
+
+1. **页面拿不到已存的密钥。** `GET /api/settings` 一律返回空串，只多给一个 `_api_key_set` 说是"有没有存"。
+   所以密钥不会出现在截图、日志、接口基线文件里；留空保存等于"不改"，不会把已存的抹掉。
+2. **`.gitignore`** 挡住 `config.local.json`、`*.local.json`、`.env*`、`*.pem`、`*.key`。
+3. **提交前钩子。** 暂存内容里出现 `sk-…` 这类串，或者往里加 `config.local.json`，直接拒绝提交。
+   装法：`python tools/install_hooks.py`（每个 clone 跑一次，钩子只在本地）。
+4. **推送前再扫一遍。** 就算用 `--no-verify` 绕过了第 3 道，提交后的钩子会把这次提交再扫一次，
+   扫到密钥只提交不推送，并提示你去看 `git show --stat HEAD`。
+
+2026-10-30 查过一遍：仓库历史和索引里没有任何非空的 `api_key`，也没有 `config.local.json`。
+
+---
+
 ## 代码怎么切的
 
 ![四个包的依赖方向](assets/architecture.svg)

@@ -1,0 +1,33 @@
+#!/bin/sh
+# 提交前拦一道：别把密钥弄进公开仓库。
+#
+# 装法（每个 clone 做一次）：python tools/install_hooks.py
+#
+# 拦两类：
+#   1. 把 config.local.json / .env / *.pem 这类文件加进暂存区
+#   2. 暂存内容里出现像密钥的字符串
+# 真要绕过：git commit --no-verify。绕过之后 post-commit 那道还会再拦一次推送。
+
+set -e
+
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+
+bad_files=$(printf '%s\n' "$staged" | grep -Ei '(^|/)(config\.local\.json|\.env(\..*)?|id_rsa|id_ed25519|[^/]*\.pem)$' || true)
+if [ -n "$bad_files" ]; then
+  echo "[secret-guard] 提交被拒绝：这些文件可能装着密钥"
+  printf '%s\n' "$bad_files"
+  echo "[secret-guard] 密钥放 config.local.json 这类不进版本库的文件里"
+  exit 1
+fi
+
+added=$(git diff --cached -U0 --no-color | grep '^+' | grep -v '^+++' || true)
+
+hit=$(printf '%s\n' "$added" | grep -En 'sk-[A-Za-z0-9_-]{16,}|"api_key"[[:space:]]*:[[:space:]]*"[^"]{8,}"|Bearer[[:space:]]+[A-Za-z0-9._-]{20,}' || true)
+if [ -n "$hit" ]; then
+  echo "[secret-guard] 提交被拒绝：暂存内容里有像密钥的东西"
+  printf '%s\n' "$hit" | cut -c1-140
+  echo "[secret-guard] 是误报就把那串字符拆开写；确实要强推：git commit --no-verify"
+  exit 1
+fi
+
+exit 0
