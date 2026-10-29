@@ -2,8 +2,8 @@
 
 `make_judge(cfg)` 返回一个可调用的 judge，上层不用关心用的是哪套判定。
 """
-from ..core import config as app_config
-from ..core.checks import (CHECKS, CHECK_INDEX, DROPPED, blank_verdict, fix_clauses,
+from ...core import config as app_config
+from ...core.checks import (CHECKS, CHECK_INDEX, DROPPED, blank_verdict, fix_clauses,
                            is_critical, summarize)
 from . import faces, hands, rules
 

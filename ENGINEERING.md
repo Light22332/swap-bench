@@ -245,5 +245,14 @@ Phase 0 和 1 不改变任何行为，可以放心做；Phase 2 是唯一需要�
 - 单测拆成两份：`tools/tests/test_policy.py` 测策略本身（不碰 IO），`tools/tests/test_runner.py` 用假后端测"策略和记录怎么串"
 - 验收：`check.py` 8/8；`replay.py` 仍是 20 次尝试、**翻转 0**——说明抽成纯函数之后判定行为没变
 
+**Phase 3 完成（2026-10-29）**
+
+- `app/capability/` 三个子包：`generate/`（graph + comfyui + cloud + base）、`judge/`（faces + hands + rules）、`prep/`（crop + parse_clothes）
+- `app/prep.py` → `capability/prep/crop.py`，`app/parse_clothes.py` → `capability/prep/parse_clothes.py`，`app/graph.py` → `capability/generate/graph.py`
+- 删掉 `judge/vlm.py`（123 行死代码，它最后的版本在提交 `489de5d7` 之前）
+- 相对 import 从两级变三级（`...core`），`tools/check.py` 的依赖检查扩成整条链：core 不许往上、capability 不许引 pipeline/api
+- 验收：`check.py` 8/8；`replay.py` 20 次尝试、**翻转 0**；服务重启后 `/api/config` 正常
+
+
 
 

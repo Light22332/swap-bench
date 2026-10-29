@@ -12,8 +12,8 @@ import urllib.parse
 import urllib.request
 import uuid
 
-from ..core import config as app_config
-from ..graph import build_swap_graph
+from ...core import config as app_config
+from .graph import build_swap_graph
 from .base import BackendError, GenResult
 
 

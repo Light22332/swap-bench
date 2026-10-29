@@ -12,7 +12,7 @@ import tempfile
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, ROOT)
 
-from app.adapters.base import GenResult          # noqa: E402
+from app.capability.generate.base import GenResult          # noqa: E402
 from app.core.store import Store                 # noqa: E402
 from app.pipeline import new_job                 # noqa: E402
 from app.pipeline import runner                  # noqa: E402

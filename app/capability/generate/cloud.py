@@ -14,7 +14,7 @@ import urllib.error
 import urllib.request
 import uuid
 
-from ..core import config as app_config
+from ...core import config as app_config
 from .base import BackendError, GenResult
 
 BOUNDARY = "----dshswap" + "0123456789abcdef"

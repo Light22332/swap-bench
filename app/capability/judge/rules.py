@@ -18,7 +18,7 @@ import time
 from PIL import Image, ImageChops, ImageStat
 
 from . import faces, hands
-from ..core.checks import CHECKS, blank_verdict, summarize
+from ...core.checks import CHECKS, blank_verdict, summarize
 
 GRID = 16
 SMALL = 128

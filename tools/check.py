@@ -58,7 +58,7 @@ def step_tests():
 def step_smoke():
     """拿三张现成的图跑一遍判定，确认模型能加载、判定不炸。"""
     print("判定冒烟")
-    from app.judge import make_judge
+    from app.capability.judge import make_judge
     judge = make_judge({"models_dir": os.path.join(ROOT, "models")})
     person = os.path.join(ROOT, "samples", "case1_person.jpg")
     results = sorted(glob.glob(os.path.join(ROOT, "outputs", "*.png")))
@@ -79,7 +79,11 @@ def step_smoke():
 
 
 def step_imports():
-    """依赖方向：core 不许 import 上层，任何模块不许 import api。"""
+    """依赖方向：api → pipeline → capability → core，只能往下。
+
+    core 不许 import 任何上层；capability 不许 import pipeline 或 api；
+    只有 api 里能有 api。
+    """
     print("依赖方向")
     bad = []
     for f in py_files():
@@ -87,14 +91,18 @@ def step_imports():
         if not rel.startswith("app/") or not os.path.isfile(f):
             continue
         src = open(f, encoding="utf-8", errors="ignore").read()
-        if "from .api" in src or "from app.api" in src:
-            if not rel.startswith("app/api/"):
-                bad.append(f"{rel} 引用了 api")
+        if ("from .api" in src or "from app.api" in src or "from ..api" in src) \
+                and not rel.startswith("app/api/"):
+            bad.append(f"{rel} 引用了 api")
         if rel.startswith("app/core/"):
             for mod in ("capability", "pipeline", "api"):
-                if f"app.{mod}" in src or f"from .{mod}" in src:
+                if f"app.{mod}" in src or f"from .{mod}" in src or f"from ..{mod}" in src:
                     bad.append(f"{rel} 引用了 {mod}")
-    report("core/api 单向依赖", not bad, "；".join(bad)[:400])
+        if rel.startswith("app/capability/"):
+            for mod in ("pipeline", "api"):
+                if f"app.{mod}" in src or f"from ..{mod}" in src or f"from ...{mod}" in src:
+                    bad.append(f"{rel} 引用了 {mod}")
+    report("单向依赖（core ← capability ← pipeline ← api）", not bad, "；".join(bad)[:400])
 
 
 def step_config_access():

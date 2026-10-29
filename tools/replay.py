@@ -20,7 +20,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
-from app.judge import make_judge            # noqa: E402
+from app.capability.judge import make_judge            # noqa: E402
 
 
 def read_job(path):

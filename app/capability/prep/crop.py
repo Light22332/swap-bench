@@ -72,7 +72,7 @@ def _person_present(path, models_dir):
     if not models_dir:
         return None
     try:
-        from .judge import faces
+        from ..judge import faces
     except Exception:
         return None
     if not faces.load(models_dir):

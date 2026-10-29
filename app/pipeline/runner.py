@@ -6,12 +6,12 @@ import os
 import time
 import traceback
 
-from ..adapters import GenRequest, make_backend
+from ..capability.generate import GenRequest, make_backend
 from ..core import config as app_config
 from ..core.checks import fix_clauses, is_critical
 from ..core.store import Store, compute_metrics
-from ..judge import make_judge
-from ..prep import crop_garment
+from ..capability.judge import make_judge
+from ..capability.prep import crop_garment
 from . import policy, select
 
 

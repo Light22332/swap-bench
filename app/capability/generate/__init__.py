@@ -1,4 +1,4 @@
-from ..core import config as app_config
+from ...core import config as app_config
 from .base import BackendError, GenRequest, GenResult
 from .cloud import CloudBackend
 from .comfyui import ComfyUIBackend
