@@ -74,7 +74,7 @@ function renderRail() {
 
   $('rail-case').textContent =
     `第 ${live.index} / ${S.cases.length} 件 · ${live.garment || ''}`;
-  $('rail-num').textContent = S.elapsed ? S.elapsed.toFixed(1) + 's' : '—';
+  $('rail-num').textContent = S.elapsed ? `已用 ${Math.round(S.elapsed)} 秒` : '—';
 
   const gen = lastStage(live, 'generate');
   const jud = lastStage(live, 'judge');

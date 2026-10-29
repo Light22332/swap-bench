@@ -5,6 +5,7 @@
 import os
 import threading
 
+from ...capability.generate import make_backend
 from ...core import config as app_config
 from ...core import paths
 from ...pipeline import new_job, run_job
@@ -44,11 +45,29 @@ def handle_post(req):
     instruction = data.get("instruction") or app_config.instruction(cfg)
     negative = data.get("negative") or app_config.negative(cfg)
 
+    if not _can_generate(cfg):
+        req.json({"error": "换装服务还没起来。先双击根目录的「预热.bat」，"
+                           "等它说「可以开始演示了」，再点一次开始。"}, 400)
+        return True
+
     job = new_job(person_full, glist, instruction, negative, cfg)
     state.add_job(job)
     threading.Thread(target=_run_guarded, args=(job, cfg), daemon=True).start()
     req.json({"ok": True, "job_id": job.id})
     return True
+
+
+def _can_generate(cfg):
+    """本地后端先探一眼：ComfyUI 不在就当场说清楚，别让后台线程抛一堆堆栈给用户看。
+
+    探测本身出问题就放行——这道闸门是为了把话说清楚，不是为了避免出错。
+    """
+    if app_config.backend(cfg) != "comfyui":
+        return True
+    try:
+        return make_backend("comfyui", cfg).ping()
+    except Exception:
+        return True
 
 
 def _run_guarded(job, cfg):

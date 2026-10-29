@@ -80,6 +80,21 @@ class ComfyUIBackend:
             meta={"queue_s": round(queue_s, 2), "prompt_id": pid},
         )
 
+    def system_stats(self, timeout=3.0):
+        """探活：打一枪 /system_stats，拿不到返回 None，不抛。
+
+        这个接口不碰模型，所以 ComfyUI 刚起来、权重还没进显存时也能答上来。
+        上层用它决定"现在点开始会不会白等"。
+        """
+        try:
+            return json.load(urllib.request.urlopen(
+                self.base_url + "/system_stats", timeout=timeout))
+        except Exception:
+            return None
+
+    def ping(self, timeout=3.0):
+        return self.system_stats(timeout) is not None
+
     # ---------- 内部 ----------
 
     def _stage(self, path, prefix):

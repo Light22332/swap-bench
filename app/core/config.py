@@ -7,6 +7,7 @@ config.json 会各走各的，`tools/check.py` 里有一条检查专门盯这个
 import copy
 import json
 import os
+import sys
 
 from . import paths
 
@@ -98,3 +99,19 @@ def uploads_dir(cfg):
 def server_addr(cfg):
     s = section(cfg, "server")
     return s["host"], int(s["port"])
+
+
+def comfyui_base(cfg):
+    """ComfyUI 的地址。这一节不写进 DEFAULTS：它进 /api/config 的响应，多一个键就变形状。"""
+    return ((cfg.get("comfyui") or {}).get("base_url")
+            or "http://127.0.0.1:8188").rstrip("/")
+
+
+def comfyui_dir(cfg):
+    """ComfyUI 安装根目录（下面要有 ComfyUI/main.py）。桌面壳和预热脚本都用它。"""
+    return (cfg.get("desktop") or {}).get("comfyui_dir") or ""
+
+
+def desktop_python(cfg):
+    """起 ComfyUI 用哪个 python。没配就用当前这个解释器。"""
+    return (cfg.get("desktop") or {}).get("python") or sys.executable
