@@ -1,11 +1,11 @@
 @echo off
-chcp 65001 >nul
+chcp 936 >nul
 cd /d "%~dp0"
 
 if exist "node_modules\electron\dist\electron.exe" goto run
 
 echo.
-echo   杩樻病瑁呬緷璧栥�傚厛璺戜竴娆¤繖涓細
+echo    还没装依赖。先在这个文件夹里打开命令行，跑一次：
 echo.
 echo       npm install
 echo.

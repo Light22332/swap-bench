@@ -146,9 +146,11 @@ cfg 对比实验：cfg=1 与 cfg=4 视觉上几乎无差别，但 cfg=4 慢 22%�
 
 ## 桌面应用
 
-双击 `启动换装台.bat`，或者命令行 `npm start`。
+双击 `启动换装台.exe`（5 KB 的启动器，不弹黑窗口）。没有 exe 时用 `启动换装台.bat`，或命令行 `npm start`。
 
 ![桌面窗口](outputs/electron-window.png)
+
+首次打开要等 40 秒左右：它先把 ComfyUI 拉起来（约 35 秒），再起本地服务，然后才开窗口。之后再开快很多。
 
 首次运行前装一次依赖（Electron 的二进制在 GitHub 上，国内需要镜像）：
 
@@ -242,7 +244,8 @@ web/                  index.html / style.css / app.js，无框架
 models/               face_detection_yunet.onnx / face_recognition_sface.onnx
 tools/                smoke_test.py（单次验证）、run_batch.py（命令行批量）
 runs/                 每次任务的 JSONL 检验单
-启动换装台.bat        双击启动桌面应用
+启动换装台.exe        双击启动（无黑窗口）
+启动换装台.bat        同一件事的 bat 版，exe 不能用时兜底
 ```
 
 ---
