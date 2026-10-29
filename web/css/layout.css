@@ -9,10 +9,6 @@
   gap: var(--gut);
   padding: 26px var(--gut) 18px;
   border-bottom: 1px solid var(--rule);
-  /* 一张压在台面上的纸：比台面亮一档，底下有一点影子 */
-  background: rgba(255, 255, 255, 0.42);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6),
-              0 8px 16px -12px rgba(27, 42, 51, 0.5);
 }
 
 .masthead h1 {
@@ -70,8 +66,6 @@
 .inputs {
   padding: var(--gut);
   border-right: 1px solid var(--rule);
-  background: rgba(255, 255, 255, 0.26);
-  box-shadow: 8px 0 18px -16px rgba(27, 42, 51, 0.6);
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -99,17 +93,15 @@
   width: 100%;
   border: 1px dashed var(--rule);
   background: rgba(255, 255, 255, 0.34);
-  box-shadow: var(--sunk);
   cursor: pointer;
   overflow: hidden;
-  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  transition: background 160ms ease, border-color 160ms ease;
 }
 
 .slot:hover,
 .slot:focus-within {
   background: rgba(255, 255, 255, 0.6);
   border-color: var(--ink);
-  box-shadow: none;
 }
 
 .slot:focus-visible {
@@ -233,33 +225,23 @@
   color: var(--table);
   background: var(--ink);
   border: 1px solid var(--ink);
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
   padding: 12px;
   margin-bottom: 9px;
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  transition: background 140ms ease, color 140ms ease, border-color 140ms ease,
-              transform 90ms ease, box-shadow 90ms ease;
+  transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
 }
 
-/* 像一颗真的键：底下一道实心边，按下去吃掉它 */
 .go:hover:not(:disabled) {
   background: var(--table);
   color: var(--ink);
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.18);
-}
-
-.go:active:not(:disabled) {
-  transform: translateY(3px);
-  box-shadow: none;
 }
 
 .go:disabled {
   background: transparent;
   color: var(--ash);
   border-color: var(--line);
-  box-shadow: none;
   cursor: not-allowed;
 }
 

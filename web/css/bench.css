@@ -106,7 +106,6 @@
 
 .sheet.is-empty {
   background: var(--table);
-  box-shadow: var(--sunk);
   flex: 1;
   width: auto;
   min-height: 300px;
@@ -130,24 +129,15 @@
   color: inherit;
   text-align: left;
   background: var(--table);
-  box-shadow: var(--lift-1);
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  transition: background 140ms ease, box-shadow 160ms ease, transform 160ms ease;
+  transition: background 140ms ease;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* 悬停时把相纸捏起来一点：朝右下投影加深，自身往上挪 2px */
-.cell:hover {
-  background: rgba(255, 255, 255, 0.42);
-  box-shadow: var(--lift-2);
-  transform: translateY(-3px);
-  z-index: 1;
-}
-
-.cell:active { transform: translateY(0); box-shadow: var(--lift-1); }
+.cell:hover { background: rgba(255, 255, 255, 0.42); }
 .cell:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
 
 /* 每一格：图 + 左下角编号，底下一行虚线撕口 */
@@ -172,7 +162,6 @@
   border: 1px solid var(--line);
   border-left: 0;
   border-bottom: 0;
-  box-shadow: 0 1px 0 var(--edge);
   font-family: var(--num);
   font-size: 28px;
   font-weight: 600;
