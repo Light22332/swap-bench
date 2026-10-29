@@ -1,0 +1,2 @@
+# git 钩子是 sh 脚本，换行必须是 LF：Windows 上 checkout 成 CRLF 会让 sh 读不了第一行。
+tools/git-hooks/* text eol=lf

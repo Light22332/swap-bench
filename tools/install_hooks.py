@@ -8,7 +8,6 @@
 换机器或者重新 clone 之后要再跑一次。
 """
 import os
-import shutil
 import stat
 import sys
 
@@ -28,7 +27,11 @@ def main():
         if not os.path.isfile(src) or name.endswith(".md"):
             continue
         dst = os.path.join(DST, name)
-        shutil.copyfile(src, dst)
+        # 一律按 LF 写出去：Windows 上 checkout 出来的是 CRLF，sh 读带 \r 的脚本会炸
+        with open(src, "rb") as f:
+            blob = f.read().replace(b"\r\n", b"\n")
+        with open(dst, "wb") as f:
+            f.write(blob)
         os.chmod(dst, os.stat(dst).st_mode | stat.S_IEXEC)
         done.append(name)
 
