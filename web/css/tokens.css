@@ -2,7 +2,10 @@
 
 /* 换装验收台
    视觉比喻：摄影棚的看片台。
-   纸面台面 + 墨蓝线 + 红蜡笔盖章。零圆角、零阴影、图与图之间只有发丝线。
+   纸面台面 + 墨蓝线 + 红蜡笔盖章。零圆角，图与图之间只有发丝线。
+
+   立体感只有一种做法：相纸压在台面上。光源在左上，阴影一律朝右下，
+   靠的是"纸的厚度"而不是圆角和高光——所以阴影都很浅，只在边缘露一点。
 
    颜色只有六个，其余全是它的透明度变体。
 */
@@ -18,6 +21,12 @@
   --line:  rgba(27, 42, 51, 0.14);
   --rule:  rgba(27, 42, 51, 0.42);
   --veil:  rgba(237, 233, 225, 0.86);
+
+  /* 厚度：lift-1 是"平放在台面上"，lift-2 是"捏起来看一眼"，sunk 是"压进台面" */
+  --lift-1: 0 1px 0 rgba(27, 42, 51, 0.12), 0 3px 8px -3px rgba(27, 42, 51, 0.22);
+  --lift-2: 0 3px 0 rgba(27, 42, 51, 0.10), 0 16px 30px -12px rgba(27, 42, 51, 0.42);
+  --sunk:   inset 0 1px 3px rgba(27, 42, 51, 0.10);
+  --edge:   rgba(27, 42, 51, 0.16);
 
   --sans: "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", sans-serif;
   --num:  Bahnschrift, "DIN Alternate", "Segoe UI", sans-serif;

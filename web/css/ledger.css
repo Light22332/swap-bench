@@ -28,6 +28,7 @@
   flex-direction: column;
   background: var(--table);
   border-left: 1px solid var(--rule);
+  box-shadow: -14px 0 34px -22px rgba(27, 42, 51, 0.55);
   padding: var(--gut);
   overflow: hidden;
 }
