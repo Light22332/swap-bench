@@ -238,4 +238,12 @@ Phase 0 和 1 不改变任何行为，可以放心做；Phase 2 是唯一需要�
 - `paths.py` 收掉了 server 里重复的 `ROOT/WEB/UPLOADS` 和两个路径穿越防护函数
 - 验收：`check.py` 7/7 全绿（新增配置入口一项）；`replay.py` 仍是 20 次尝试、**翻转 0**
 
+**Phase 2 完成（2026-10-29）**
+
+- `app/pipeline.py` 变成包：`policy.py`（`mode_for` / `decide`，纯函数）、`select.py`（`best` / `case_state`，纯函数）、`runner.py`（只剩 IO 和记账）
+- `Job` / `new_job` 挪进 `core/models.py`
+- 单测拆成两份：`tools/tests/test_policy.py` 测策略本身（不碰 IO），`tools/tests/test_runner.py` 用假后端测"策略和记录怎么串"
+- 验收：`check.py` 8/8；`replay.py` 仍是 20 次尝试、**翻转 0**——说明抽成纯函数之后判定行为没变
+
+
 
