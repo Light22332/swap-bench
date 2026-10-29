@@ -147,6 +147,21 @@ def main():
     body = (CloudBackend(make_cfg(port, size="")).generate(make_req(resolution=640)), MODE["body"])[1]
     check("小尺寸给方形", b"1024x1024" in body)
 
+    print("接口形状：地址决定走哪条")
+    be = CloudBackend(make_cfg(port))
+    check("普通地址走 openai", be.resolve_shape() == "openai", be.resolve_shape())
+    be = CloudBackend({"cloud": {"base_url": "https://dashscope.aliyuncs.com/api/v1",
+                                 "api_key": "k", "model": "m"}, "paths": {"outputs": OUT}})
+    check("aliyuncs 地址自动走 dashscope", be.resolve_shape() == "dashscope", be.resolve_shape())
+    check("compatible-mode 也归一成 host/api/v1",
+          be.native_root() == "https://dashscope.aliyuncs.com/api/v1", be.native_root())
+    be = CloudBackend({"cloud": {"base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+                                 "api_key": "k", "model": "m"}, "paths": {"outputs": OUT}})
+    check("从 compatible-mode 剥掉", be.native_root() == "https://dashscope.aliyuncs.com/api/v1",
+          be.native_root())
+    be = CloudBackend(make_cfg(port, shape="dashscope"))
+    check("显式指定优先", be.resolve_shape() == "dashscope", be.resolve_shape())
+
     srv.shutdown()
     print()
     if FAILED:

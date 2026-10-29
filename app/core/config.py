@@ -14,7 +14,8 @@ from . import paths
 DEFAULTS = {
     "cloud": {
         "base_url": "", "api_key": "", "model": "", "timeout": 120,
-        "size": "",                 # 留空按竖版人像给 1024x1536
+        "shape": "auto",            # auto / openai / dashscope：auto 看地址里有没有 aliyuncs.com
+        "size": "",                 # 留空按竖版人像给 1024x1536（百炼给 1024*1024）
         "price_per_image": 0.0,     # 填了就把单张成本记进 GenResult.cost
     },
     "server": {"host": "127.0.0.1", "port": 8770},
