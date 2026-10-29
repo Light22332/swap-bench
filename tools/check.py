@@ -97,6 +97,21 @@ def step_imports():
     report("core/api 单向依赖", not bad, "；".join(bad)[:400])
 
 
+def step_config_access():
+    """配置默认值只许写在 core/config.py。别处再写 cfg.get(键, 默认) 就等于有两套默认值。"""
+    print("配置入口")
+    bad = []
+    for f in py_files():
+        rel = os.path.relpath(f, ROOT).replace("\\", "/")
+        if not rel.startswith("app/") or rel == "app/core/config.py" or not os.path.isfile(f):
+            continue
+        src = open(f, encoding="utf-8", errors="ignore").read()
+        for pattern in ("cfg.get(", "config.get(", "CONFIG.get("):
+            if pattern in src:
+                bad.append(f"{rel} 里有 {pattern}")
+    report("配置只从 core.config 取", not bad, "；".join(bad)[:400])
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--fast", action="store_true", help="跳过判定冒烟")
@@ -104,6 +119,7 @@ def main():
     t0 = time.time()
     step_compile()
     step_imports()
+    step_config_access()
     step_tests()
     if not args.fast:
         step_smoke()

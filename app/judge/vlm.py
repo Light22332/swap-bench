@@ -11,7 +11,7 @@ import time
 import urllib.error
 import urllib.request
 
-from .base import CHECKS, summarize
+from ..core.checks import CHECKS, summarize
 
 
 def _data_uri(path):

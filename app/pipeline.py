@@ -6,8 +6,11 @@
    实测发生过：第 2 次人像保住了，但被判"背景不合格"，重试后第 3 次脸被手机挡住，
    因为当时的判定只看背景，于是放行了更差的那张。现在按评分取最优。
 
-2. **只有关键项（脸、衣服）不过才重试。**
+2. **只有关键项（脸、衣服、手）不过才重试。**
    背景这类非关键项不过就重试，容易把已经对的结果改坏。宁可记一笔，也不折腾。
+
+配置从 core.config 取，路径从 core.paths 取，判定规则从 core.checks 取；
+这个文件不定义默认值，也不拼项目路径。
 """
 import os
 import time
@@ -15,12 +18,11 @@ import traceback
 import uuid
 
 from .adapters import GenRequest, make_backend
+from .core import config as app_config
+from .core.checks import is_critical
+from .core.store import Store, compute_metrics
 from .judge import make_judge, fix_clauses
-from .judge.base import CHECK_INDEX
 from .prep import crop_garment
-from .store import Store, compute_metrics
-
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 class Job:
@@ -57,23 +59,22 @@ class Job:
 
 
 def _critical_failed(failures):
-    return any(CHECK_INDEX.get(k, {}).get("critical") for k in failures)
+    return any(is_critical(k) for k in failures)
 
 
 def run_job(job, config):
-    store = Store(config.get("paths", {}).get("runs", os.path.join(ROOT, "runs")))
-    backend = make_backend(config.get("backend"), config)
+    pipeline_cfg = app_config.section(config, "pipeline")
+    sampling = app_config.section(config, "sampling")
+    prep_cfg = app_config.section(config, "prep")
+    do_prep = prep_cfg["enabled"]
+    prep_mode = prep_cfg["mode"]
+    max_attempts = pipeline_cfg["max_attempts"]
+    models_dir = app_config.models_dir(config)
+    prep_dir = os.path.join(app_config.outputs_dir(config), "prep")
+
+    store = Store(app_config.runs_dir(config))
+    backend = make_backend(app_config.backend(config), config)
     judge = make_judge(config)
-    pipeline_cfg = config.get("pipeline", {})
-    max_attempts = pipeline_cfg.get("max_attempts", 2)
-    sampling = config.get("sampling", {})
-    prep_cfg = config.get("prep", {})
-    prep_dir = os.path.join(config.get("paths", {}).get("outputs", os.path.join(ROOT, "outputs")), "prep")
-    do_prep = prep_cfg.get("enabled", True)
-    prep_mode = prep_cfg.get("mode", "parse")
-    models_dir = config.get("models_dir") or "models"
-    if not os.path.isabs(models_dir):
-        models_dir = os.path.join(ROOT, models_dir)
 
     job.state = "running"
     store.append(job.id, {"stage": "job_start", "job": job.id,
@@ -82,8 +83,8 @@ def run_job(job, config):
                           "backend": backend.name, "judge_mode": judge.mode,
                           "prep": do_prep, "prep_mode": prep_mode,
                           "max_attempts": max_attempts,
-                          "escape_attempts": pipeline_cfg.get("escape_attempts", 0),
-                          "escape_cfg": pipeline_cfg.get("escape_cfg", 2.0)})
+                          "escape_attempts": pipeline_cfg["escape_attempts"],
+                          "escape_cfg": pipeline_cfg["escape_cfg"]})
 
     for case, garment in zip(job.cases, job.garments):
         case["state"] = "running"
@@ -92,7 +93,7 @@ def run_job(job, config):
         if do_prep:
             ref_path, prep_meta = crop_garment(
                 garment["path"], prep_dir, mode=prep_mode, models_dir=models_dir,
-                device=prep_cfg.get("device", "cpu"))
+                device=prep_cfg["device"])
             if prep_meta:
                 case["prep"] = prep_meta
                 store.append(job.id, {"stage": "prep", "case": case["index"],
@@ -100,8 +101,8 @@ def run_job(job, config):
 
         instruction = job.instruction
         tried = []          # [(verdict, gen_result)]
-        escape_cfg = pipeline_cfg.get("escape_cfg", 2.0)
-        escape_left = max(0, int(pipeline_cfg.get("escape_attempts", 0)))
+        escape_cfg = pipeline_cfg["escape_cfg"]
+        escape_left = max(0, int(pipeline_cfg["escape_attempts"]))
         total_attempts = max_attempts + escape_left
 
         for attempt in range(1, total_attempts + 1):
@@ -110,7 +111,7 @@ def run_job(job, config):
             escaping = attempt > max_attempts
             case["attempts_used"] = attempt
             mode = "escape" if escaping else ("base" if attempt == 1 else "refine")
-            cfg_now = escape_cfg if escaping else sampling.get("cfg", 1.0)
+            cfg_now = escape_cfg if escaping else sampling["cfg"]
             instr_now = job.instruction if escaping else instruction
 
             req = GenRequest(
@@ -119,8 +120,8 @@ def run_job(job, config):
                 instruction=instr_now,
                 negative=job.negative,
                 cfg=cfg_now,
-                steps=sampling.get("steps", 40),
-                resolution=sampling.get("resolution", 1024),
+                steps=sampling["steps"],
+                resolution=sampling["resolution"],
                 seed=None,
                 prefix=f"{job.id}_c{case['index']}_a{attempt}",
             )

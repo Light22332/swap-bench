@@ -14,6 +14,7 @@ import urllib.error
 import urllib.request
 import uuid
 
+from ..core import config as app_config
 from .base import BackendError, GenResult
 
 BOUNDARY = "----dshswap" + "0123456789abcdef"
@@ -39,12 +40,12 @@ class CloudBackend:
     name = "cloud"
 
     def __init__(self, cfg):
-        c = cfg.get("cloud", {})
+        c = app_config.section(cfg, "cloud")
         self.base_url = (c.get("base_url") or "").rstrip("/")
         self.api_key = c.get("api_key") or ""
         self.model = c.get("model") or ""
         self.timeout = c.get("timeout", 120)
-        self.out_dir = cfg.get("paths", {}).get("outputs", "outputs")
+        self.out_dir = app_config.outputs_dir(cfg)
 
     @property
     def configured(self):

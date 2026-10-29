@@ -12,6 +12,7 @@ import urllib.parse
 import urllib.request
 import uuid
 
+from ..core import config as app_config
 from ..graph import build_swap_graph
 from .base import BackendError, GenResult
 
@@ -25,7 +26,7 @@ class ComfyUIBackend:
         self.input_dir = c["input_dir"]
         self.models = cfg["models"]
         self.sampling = cfg["sampling"]
-        self.out_dir = cfg.get("paths", {}).get("outputs", "outputs")
+        self.out_dir = app_config.outputs_dir(cfg)
         self.cold_start_seconds = None
 
     # ---------- 对外 ----------

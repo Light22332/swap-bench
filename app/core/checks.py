@@ -1,13 +1,16 @@
-"""质检契约。
+"""质检契约：有哪几项、怎么加权、多少分算过。
 
 只有五项，因为只有这五项现在能真的判：
   脸没变 / 衣服换上了 / 手还在 / 背景没动 / 没有多余的人
 
-文字水印这类判不了的，不列进来充数——列了就必然是一排"—"，
-看起来像坏了。这一点在页面提示和 README 里都写清楚。
+文字水印判不了，所以不列进来充数——列了就必然是一排"—"，看起来像坏了。
+这一点在页面提示和 README 里都写清楚了。
 
 手这一项是"数得清"而不是"看得出好坏"：它只比原图和结果的手数，
 手指有没有粘连它看不出来。名字就叫"手还在"，别把能力说得比实际大。
+
+这里是纯数据加纯函数，不碰 IO、不加载模型。判定实现在 capability/judge/rules.py，
+编排层从这里拿 CHECK_INDEX 判断"这一项是不是关键项"。
 """
 import statistics
 
@@ -35,7 +38,11 @@ CHECKS = [
 ]
 
 CHECK_INDEX = {c["key"]: c for c in CHECKS}
-DROPPED = ["文字/水印"]   # 现在判不了，写在这里免得以后被当成"已覆盖"
+
+# 判不了的项记在这里，免得以后被当成"已覆盖"：文字水印目前没有可信的本地做法。
+DROPPED = ("文字/水印",)
+
+PASS_SCORE = 0.75   # 加权得分下限；关键项任一不过，分数再高也不算通过
 
 
 def blank_verdict(mode="local", note=""):
@@ -72,7 +79,7 @@ def summarize(checks_result, mode, note="", latency_s=0.0, extra=None):
                 critical_failed = True
 
     score = (hit_w / total_w) if total_w else 0.0
-    passed = bool(judged and not critical_failed and score >= 0.75)
+    passed = bool(judged and not critical_failed and score >= PASS_SCORE)
 
     out = {
         "mode": mode,
@@ -91,7 +98,12 @@ def summarize(checks_result, mode, note="", latency_s=0.0, extra=None):
     return out
 
 
+def is_critical(key):
+    return bool(CHECK_INDEX.get(key, {}).get("critical"))
+
+
 def fix_clauses(failures):
+    """把失败项翻成能塞进提示词的一句约束，按 CHECKS 顺序去重。"""
     out = []
     for k in failures:
         c = CHECK_INDEX.get(k)

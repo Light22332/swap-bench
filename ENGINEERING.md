@@ -45,7 +45,7 @@
 ```
 app/
   core/                契约层：不 import 任何算法，也不 import 上层
-    models.py          Job / Case / Attempt / Verdict 的数据形状
+    models.py          Job / Case / Attempt / Verdict 的数据形状（Phase 2 迁入）
     checks.py          5 项检查的定义：key、权重、是否关键、失败时的修法文案
     config.py          config.json 的读取、默认值、校验（唯一来源）
     store.py           JSONL 读写，带 schema_version
@@ -230,4 +230,12 @@ Phase 0 和 1 不改变任何行为，可以放心做；Phase 2 是唯一需要�
 - `tools/check.py`：编译 + 依赖方向 + 单测 + 判定冒烟，6 项全绿，2.0 秒
 - `tools/replay.py`：复判 20 次尝试，新增 4 项（都是后来才有的 `hand_preserved`），消失 0，**翻转 0**，跳过 6 处（历史图片已删）
 - 基线：翻转数为 0，后续每个阶段都拿这个数对
+
+**Phase 1 完成（2026-10-29）**
+
+- 新增 `app/core/`：`checks.py`（原 `judge/base.py`）、`config.py`、`paths.py`、`store.py`（原 `app/store.py`）
+- 配置默认值收到 `core/config.py` 一处。`tools/check.py` 加了「配置只从 core.config 取」这项检查，别处再写 `cfg.get(键, 默认)` 会直接报红
+- `paths.py` 收掉了 server 里重复的 `ROOT/WEB/UPLOADS` 和两个路径穿越防护函数
+- 验收：`check.py` 7/7 全绿（新增配置入口一项）；`replay.py` 仍是 20 次尝试、**翻转 0**
+
 

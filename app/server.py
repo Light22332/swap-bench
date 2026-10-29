@@ -16,11 +16,13 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from .pipeline import new_job, run_job
-from .store import Store, compute_metrics
+from .core import config as app_config
+from .core import paths
+from .core.store import Store, compute_metrics
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-WEB = os.path.join(ROOT, "web")
-UPLOADS = os.path.join(ROOT, "uploads")
+ROOT = paths.ROOT
+WEB = paths.WEB
+UPLOADS = paths.UPLOADS
 
 JOBS = {}
 JOBS_LOCK = threading.Lock()
@@ -31,12 +33,7 @@ CONFIG_LOCK = threading.Lock()
 
 def load_config():
     global CONFIG
-    with open(os.path.join(ROOT, "config.json"), encoding="utf-8") as f:
-        cfg = json.load(f)
-    cfg.setdefault("paths", {})
-    cfg["paths"].setdefault("outputs", os.path.join(ROOT, "outputs"))
-    cfg["paths"].setdefault("runs", os.path.join(ROOT, "runs"))
-    cfg["paths"].setdefault("uploads", UPLOADS)
+    cfg = app_config.load()
     with CONFIG_LOCK:
         CONFIG = cfg
     return cfg
@@ -44,15 +41,7 @@ def load_config():
 
 def _img_url(path):
     """把项目内的绝对路径转成 /img 可访问的 URL；越界返回 None。"""
-    if not path:
-        return None
-    try:
-        rel = os.path.relpath(path, ROOT)
-    except ValueError:
-        return None
-    if rel.startswith(".."):
-        return None
-    return "/img?path=" + urllib.parse.quote(rel.replace("\\", "/"))
+    return paths.url(path)
 
 
 def _decorate(job_dict):
@@ -67,7 +56,7 @@ def _decorate(job_dict):
 
 def _load_job_from_store(jid):
     """重启后从 JSONL 把一次历史任务还原出来，让 ?job=xxx 的链接长期有效。"""
-    store = Store(CONFIG.get("paths", {}).get("runs", os.path.join(ROOT, "runs")))
+    store = Store(app_config.runs_dir(CONFIG))
     recs = store.read(jid)
     if not recs:
         return None
@@ -118,11 +107,7 @@ def _load_job_from_store(jid):
 
 def _safe_path(rel):
     """把 URL 里的相对路径钉死在项目目录内，防止 ../ 穿越。"""
-    rel = rel.replace("\\", "/").lstrip("/")
-    full = os.path.realpath(os.path.join(ROOT, rel))
-    if not full.startswith(os.path.realpath(ROOT) + os.sep):
-        return None
-    return full
+    return paths.inside(rel)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -192,29 +177,29 @@ class Handler(BaseHTTPRequestHandler):
             with CONFIG_LOCK:
                 cfg = CONFIG
             face_models = all(
-                os.path.isfile(os.path.join(ROOT, cfg.get("models_dir", "models"), f))
+                os.path.isfile(os.path.join(app_config.models_dir(cfg), f))
                 for f in ("face_detection_yunet.onnx", "face_recognition_sface.onnx")
             )
             hand_models = all(
-                os.path.isfile(os.path.join(ROOT, cfg.get("models_dir", "models"), f))
+                os.path.isfile(os.path.join(app_config.models_dir(cfg), f))
                 for f in ("palm_detection_mediapipe_2023feb.onnx",
                           "handpose_estimation_mediapipe_2023feb.onnx")
             )
-            prep_cfg = cfg.get("prep", {})
-            parse_dir = os.path.join(ROOT, cfg.get("models_dir", "models"), "segformer_b2_clothes")
+            prep_cfg = app_config.section(cfg, "prep")
+            parse_dir = os.path.join(app_config.models_dir(cfg), "segformer_b2_clothes")
             parse_ready = all(os.path.isfile(os.path.join(parse_dir, f))
                               for f in ("config.json", "model.safetensors"))
             return self._json({
-                "backend": cfg.get("backend"),
+                "backend": app_config.backend(cfg),
                 "judge": {"mode": "local", "face_models": face_models,
                           "hand_models": hand_models},
-                "prep": {"enabled": prep_cfg.get("enabled", True),
-                         "mode": prep_cfg.get("mode", "parse"),
+                "prep": {"enabled": prep_cfg["enabled"],
+                         "mode": prep_cfg["mode"],
                          "parse_model": parse_ready},
-                "max_attempts": cfg.get("pipeline", {}).get("max_attempts", 2),
-                "instruction": cfg.get("instruction", ""),
-                "negative": cfg.get("negative", ""),
-                "sampling": cfg.get("sampling", {}),
+                "max_attempts": app_config.section(cfg, "pipeline")["max_attempts"],
+                "instruction": app_config.instruction(cfg),
+                "negative": app_config.negative(cfg),
+                "sampling": app_config.section(cfg, "sampling"),
             })
         if p.startswith("/api/job/"):
             jid = p[len("/api/job/"):]
@@ -338,8 +323,8 @@ class Handler(BaseHTTPRequestHandler):
             cfg = json.loads(json.dumps(CONFIG))  # 快照，避免任务中途被改
             if data.get("backend"):
                 cfg["backend"] = data["backend"]
-            instruction = data.get("instruction") or cfg.get("instruction", "")
-            negative = data.get("negative") or cfg.get("negative", "")
+            instruction = data.get("instruction") or app_config.instruction(cfg)
+            negative = data.get("negative") or app_config.negative(cfg)
 
         job = new_job(person_full, glist, instruction, negative, cfg)
         with JOBS_LOCK:
@@ -350,7 +335,7 @@ class Handler(BaseHTTPRequestHandler):
         return self._json({"ok": True, "job_id": job.id})
 
     def _global_metrics(self):
-        store = Store(CONFIG.get("paths", {}).get("runs", os.path.join(ROOT, "runs")))
+        store = Store(app_config.runs_dir(CONFIG))
         cases, jobs = [], 0
         for jid in store.all_jobs():
             recs = store.read(jid)
@@ -394,11 +379,10 @@ def _run_guarded(job, cfg):
 
 def serve():
     cfg = load_config()
-    host = cfg.get("server", {}).get("host", "127.0.0.1")
-    port = cfg.get("server", {}).get("port", 8770)
+    host, port = app_config.server_addr(cfg)
     srv = ThreadingHTTPServer((host, port), Handler)
     print(f"换装工作台 → http://{host}:{port}")
-    print(f"后端 {cfg.get('backend')} | 质检 {CONFIG.get('judge', {}).get('backend')}")
+    print(f"后端 {app_config.backend(cfg)} | 质检 {app_config.section(cfg, 'judge')['mode']}")
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
