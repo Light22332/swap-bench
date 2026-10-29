@@ -36,7 +36,7 @@ async function boot() {
     syncRun();
   }
 
-  // ?demo 把示例图灌进去并直接开跑，给演示和截图用
+  // ?demo 只是把示例图放好，仍然要人自己点「开始换」
   if (new URLSearchParams(location.search).has('demo')) $('demo').click();
 }
 
@@ -93,7 +93,7 @@ $('demo').addEventListener('click', async () => {
     $('slot-person').querySelector('.slot-empty').hidden = true;
     renderChips();
     syncRun();
-    startRun();
+    // 只把图放好，不替人点「开始换」——自动开跑是明确不要的（见 ROADMAP 工作原则三）
   } catch (e) {
     hint('载入示例失败：' + e.message, true);
   }
