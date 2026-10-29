@@ -3,7 +3,7 @@
 轮询是 setTimeout 自调用，不用 setInterval——上一次请求回来之后再排下一次，
 断网时不会堆一串请求。 */
 
-import { getJob, submitRun } from './api.js';
+import { cancelJob, getJob, submitRun } from './api.js';
 import { $, S, lastStage } from './state.js';
 import { hint, render, syncRun } from './render.js';
 import { renderChips } from './upload.js';
@@ -14,8 +14,20 @@ export function startRun() {
   runPending(pending);
 }
 
+/** 停下：只是打个标记，正在生成的那一张仍会跑完。 */
+export function stopRun() {
+  if (!S.running || !S.job) return;
+  S.stopping = true;
+  hint('叫停了，等正在跑的这张回来就停…');
+  cancelJob(S.job).catch((e) => {
+    S.stopping = false;
+    hint('叫停失败：' + e.message, true);
+  });
+}
+
 async function runPending(pending) {
   S.running = true;
+  S.stopping = false;
   syncRun();
   $('rerun').hidden = true;
   $('docket').hidden = true;
@@ -49,7 +61,8 @@ function poll() {
       merge(job);
       render();
       if (job.state === 'running' || job.state === 'pending') {
-        hint(progressText(job));
+        // 叫停之后别再让进度文案盖掉那句"等这张跑完就停"
+        hint(S.stopping ? '叫停了，等正在跑的这张回来就停…' : progressText(job));
         poll();
       } else {
         finishRun(job);
@@ -92,12 +105,17 @@ function progressText(job) {
 
 function finishRun(job) {
   S.running = false;
-  if (job && job.state === 'done') {
+  S.stopping = false;
+  if (job && (job.state === 'done' || job.state === 'cancelled')) {
     const ok = S.cases.filter((c) => c.passed).length;
     S.garments.forEach((g) => { g.state = 'done'; });
     renderChips();
     syncRun();
-    hint(`换好了：${ok}/${S.cases.length} 张可用。点图看大图、保存。`);
+    if (job.state === 'cancelled') {
+      hint(`停下了。已经换好 ${ok}/${S.cases.length} 张，没跑到的那些点「重新跑一次」会从头再走一遍。`);
+    } else {
+      hint(`换好了：${ok}/${S.cases.length} 张可用。点图看大图、保存。`);
+    }
   } else {
     syncRun();
     hint(job && job.error ? '出错了：' + job.error : '没跑完，可以点「重新跑一次」。', true);

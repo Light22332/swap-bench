@@ -19,7 +19,8 @@ from .routes import static as static_route
 from .routes import upload as upload_route
 
 GET_ROUTES = (static_route.handle, config_route.handle_get, jobs_route.handle_get)
-POST_ROUTES = (upload_route.handle_post, run_route.handle_post, config_route.handle_post)
+POST_ROUTES = (upload_route.handle_post, run_route.handle_post,
+               jobs_route.handle_post, config_route.handle_post)
 
 
 class Handler(BaseHTTPRequestHandler):

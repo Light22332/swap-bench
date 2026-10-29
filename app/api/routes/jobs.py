@@ -44,6 +44,22 @@ def handle_get(req):
     return False
 
 
+def handle_post(req):
+    if req.path != "/api/cancel":
+        return False
+    data = req.body()
+    jid = data.get("job_id") or data.get("job")
+    if not jid:
+        req.json({"error": "要给一个 job_id"}, 400)
+        return True
+    if not state.cancel_job(jid):
+        req.json({"error": "没有这个正在跑的任务"}, 404)
+        return True
+    req.json({"ok": True, "job_id": jid,
+              "note": "已经叫停。正在生成的那一张会跑完，之后不再重试。"})
+    return True
+
+
 def _export(req):
     jid = req.param("job")
     if not jid:

@@ -43,6 +43,9 @@ def run_job(job, config):
                           "escape_cfg": escape_cfg})
 
     for case, garment in zip(job.cases, job.garments):
+        if job.cancel_requested:
+            case["state"] = "cancelled"
+            continue
         case["state"] = "running"
         ref_path = _prepare(job, case, garment, store, prep_dir, prep_mode,
                             models_dir, do_prep)
@@ -68,7 +71,10 @@ def run_job(job, config):
 
     job.metrics = compute_metrics(job.cases, judge.mode)
     job.finished = time.time()
-    job.state = "done"
+    job.state = "cancelled" if job.cancel_requested else "done"
+    if job.cancel_requested:
+        done = sum(1 for c in job.cases if c["state"] not in ("pending", "cancelled"))
+        store.append(job.id, {"stage": "cancel", "job": job.id, "cases_done": done})
     store.append(job.id, {"stage": "job_end", "job": job.id, "metrics": job.metrics})
     return job
 
@@ -93,6 +99,8 @@ def _run_attempts(job, case, ref_path, store, backend, judge, sampling,
     refined = job.instruction
 
     for attempt in range(1, total_attempts + 1):
+        if job.cancel_requested and attempt > 1:
+            break
         case["attempts_used"] = attempt
         mode = policy.mode_for(attempt, max_attempts)
         escaping = mode == policy.ESCAPE

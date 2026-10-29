@@ -30,6 +30,14 @@ export function submitRun(payload) {
   }).then(json);
 }
 
+export function cancelJob(id) {
+  return fetch('/api/cancel', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ job_id: id }),
+  }).then(json);
+}
+
 function toDataURL(file) {
   return new Promise((resolve, reject) => {
     const fr = new FileReader();

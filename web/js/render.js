@@ -10,6 +10,7 @@ export const STAMP = {
   reworked: ['返工未过', 'is-rework'],
   rejected: ['没换成', 'is-rejected'],
   failed: ['失败', 'is-rejected'],
+  cancelled: ['停下了', 'is-live'],
 };
 
 const CHECK_LABELS = {
@@ -36,6 +37,7 @@ export function syncRun() {
   const btn = $('run');
   btn.disabled = !ready;
   btn.textContent = S.running ? '换装中…' : '开始换';
+  $('stop').hidden = !S.running;
 
   if (S.running) return;
   if (!S.person && !S.garments.length) hint('先放一张人像，再放一张要换的衣服。');

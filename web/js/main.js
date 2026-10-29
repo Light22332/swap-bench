@@ -6,7 +6,7 @@ import { getConfig, getHistory, getJob, loadSamples } from './api.js';
 import { $, S } from './state.js';
 import { hint, render, renderLedger, syncRun } from './render.js';
 import { addGarments, addPerson, isImage, renderChips, wireDrop } from './upload.js';
-import { startRun } from './run.js';
+import { startRun, stopRun } from './run.js';
 
 async function boot() {
   try {
@@ -79,6 +79,7 @@ $('file-garment').addEventListener('change', (ev) => {
 $('docket-close').addEventListener('click', () => { $('docket').hidden = true; });
 
 $('run').addEventListener('click', startRun);
+$('stop').addEventListener('click', stopRun);
 
 $('demo').addEventListener('click', async () => {
   try {

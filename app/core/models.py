@@ -27,6 +27,8 @@ class Job:
         ]
         self.metrics = {}
         self.error = None
+        # 叫停标记：只能在这一轮跑完之后生效——ComfyUI 里正在生成的那张停不掉。
+        self.cancel_requested = False
 
     def to_dict(self):
         return {
