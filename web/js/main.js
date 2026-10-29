@@ -9,6 +9,7 @@ import { addGarments, addPerson, isImage, renderChips, wireDrop } from './upload
 import { startRun, stopRun } from './run.js';
 import { initSettings } from './settings.js';
 import { refreshCostTag } from './cost.js';
+import { show as showViewer } from './viewer.js';
 
 async function boot() {
   try {
@@ -75,6 +76,13 @@ $('docket-close').addEventListener('click', () => { $('docket').hidden = true; }
 $('run').addEventListener('click', startRun);
 $('stop').addEventListener('click', stopRun);
 
+// 人像格右上角的"看大图"：别让 label 顺手唤起文件选择
+$('zoom-person').addEventListener('click', (ev) => {
+  ev.preventDefault();
+  ev.stopPropagation();
+  if (S.person) showViewer(S.person.url, S.person.name);
+});
+
 $('demo').addEventListener('click', async () => {
   try {
     const d = await loadSamples();
@@ -85,6 +93,7 @@ $('demo').addEventListener('click', async () => {
     img.src = S.person.url;
     img.hidden = false;
     $('slot-person').querySelector('.slot-empty').hidden = true;
+    $('zoom-person').hidden = false;
     renderChips();
     syncRun();
     // 只把图放好，不替人点「开始换」——自动开跑是明确不要的（见 ROADMAP 工作原则三）

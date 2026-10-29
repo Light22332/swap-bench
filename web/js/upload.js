@@ -4,6 +4,7 @@
 import { uploadFile } from './api.js';
 import { $, S } from './state.js';
 import { hint, render, syncRun } from './render.js';
+import { show as showViewer } from './viewer.js';
 
 export const isImage = (f) => f && f.type && f.type.startsWith('image/');
 
@@ -19,6 +20,7 @@ export async function addPerson(file) {
     img.src = up.url;
     img.hidden = false;
     $('slot-person').querySelector('.slot-empty').hidden = true;
+    $('zoom-person').hidden = false;
     // 换了人，之前的结果就不再对应，清掉
     S.cases = [];
     S.garments.forEach((g) => { g.state = 'pending'; });
@@ -65,6 +67,14 @@ export function renderChips() {
     sp.className = 'chip-name';
     sp.textContent = String(i + 1).padStart(2, '0') + ' ' + g.name;
 
+    // 缩略图和文件名一起当按钮：点一下看大图
+    const open = document.createElement('button');
+    open.className = 'chip-open';
+    open.type = 'button';
+    open.setAttribute('aria-label', '看大图：' + g.name);
+    open.append(im, sp);
+    open.addEventListener('click', () => showViewer(g.url, g.name));
+
     const rm = document.createElement('button');
     rm.className = 'close';
     rm.type = 'button';
@@ -82,7 +92,7 @@ export function renderChips() {
       syncRun();
     });
 
-    li.append(im, sp, rm);
+    li.append(open, rm);
     ul.append(li);
   });
   if ($('garment-count')) $('garment-count').textContent = S.garments.length;

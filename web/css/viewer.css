@@ -1,0 +1,84 @@
+/* 看大图：满屏一张图，墨色底，图底下写文件名。 */
+
+.viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 28px;
+  background: rgba(20, 28, 34, 0.93);
+}
+
+.viewer-img {
+  max-width: min(92vw, 1040px);
+  max-height: 76vh;
+  object-fit: contain;
+  background: #fff;
+  box-shadow: 10px 10px 0 rgba(0, 0, 0, 0.35);
+}
+
+.viewer-cap {
+  margin: 0;
+  font-family: var(--num);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--table);
+  opacity: 0.8;
+}
+
+.viewer-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  width: 34px;
+  height: 34px;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--table);
+  background: none;
+  border: 1px solid rgba(237, 233, 225, 0.45);
+  cursor: pointer;
+}
+
+.viewer-close:hover { background: var(--table); color: var(--ink); }
+.viewer-close:focus-visible { outline: 2px solid var(--table); outline-offset: 3px; }
+
+/* 缩略图本身是个按钮：点一下看大图 */
+.chip-open {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: zoom-in;
+}
+
+.chip-open:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* 人像格右上角的"看大图"，点了不会唤起文件选择 */
+.slot-zoom {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 26px;
+  height: 26px;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--ink);
+  background: rgba(237, 233, 225, 0.92);
+  border: 1px solid var(--rule-firm);
+  cursor: zoom-in;
+}
+
+.slot-zoom:hover { background: var(--ink); color: var(--table); border-color: var(--ink); }
+.slot-zoom:focus-visible { outline: 2px solid var(--seal); outline-offset: 2px; }
