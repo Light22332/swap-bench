@@ -103,6 +103,14 @@
 
 这一层服务的是"仓库本身是作品"。面试官点开 GitHub，想自己跑一遍，卡住就永远不会跑第二次。
 
+**做完的结果（2026-10-30）：**
+
+- P1-1 样例图：用本地 Qwen-Image 生成了 8 张（2 人像 + 6 件衣服，共约 800KB），`samples/` 随仓库分发。实测五项全过：人脸 0.85 / 0.79、身体区域变化 79% / 61%、手 2 只（复核 0.92-0.99）、背景距离 9 / 4，单张 56-58 秒。原来那 7 张商品照挪进 `bench/`，`regression.py` 改读 `bench/`，基线数字不变。
+- P1-2 `requirements.txt`：文件头写清"用 ComfyUI 那个 python 就不用装"，torch 装 CPU 版够用。
+- P1-3 CI：`.github/workflows/check.yml` 跑 `tools/check.py --fast`。先在干净 venv 里验过：只装 pillow / numpy / opencv-python-headless，5/5 通过，不需要模型和 GPU。README 顶部加了 badge。
+- P1-4 两处过期引用修好（`parse_clothes` 的路径在 README 和 models/README 里各一处，`test_pipeline_escape.py` 换成 `tools/tests/test_runner.py`）。
+- 验收：在 `%TEMP%` 里 clone 一份、拷进 `models/`、改端口起服务，点「载入示例看看」，两张全出图、都通过，第一张 55.9 秒，页面无报错。带全模型再跑一次，五项检查都有实测值。
+
 ### P1-1 换一套自己能用的样例图，旧图挪进 `bench/`
 
 **为什么**：现在 `samples/` 里那 7 张是网上的商品照，带水印、有版权，所以被 gitignore 了。结果是仓库作为作品缺了最直观的一块：点进去看不到能用的输入。
