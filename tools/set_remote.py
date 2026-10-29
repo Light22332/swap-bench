@@ -1,8 +1,10 @@
 """把远程地址写进 .git/config。
 
-为什么需要这个脚本：这台机器上 git.exe 被沙箱限制成只读，
-`git remote add` 会报 "could not lock config file .git/config: Permission denied"。
-用 dulwich 直接改配置文件，格式和 git 自己写出来的完全一样。
+**现在多半用不上了**：这台机器上有一份能正常写盘的 git
+（`D:\\Godot\\tools\\git\\cmd\\git.exe`），`git remote add` 直接就能用。
+当时写这个脚本，是因为 PATH 上那份 git 报
+"could not lock config file .git/config: Permission denied"，
+只好用 dulwich 直接改配置文件，格式和 git 自己写出来的完全一样。
 
     python tools/set_remote.py https://github.com/user/repo.git
 """

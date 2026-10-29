@@ -1,8 +1,12 @@
 """用 dulwich 建仓库并提交。
 
-为什么不用 git.exe：这台机器上 git.exe 被沙箱挡了，连 .git 目录都建不出来
-（`git init` 报 Permission denied），但普通进程可以正常写文件。
-所以用纯 Python 的 dulwich 生成标准格式的仓库，之后用真正的 git 推就行。
+**现在多半用不上了**：这台机器上另有一份能正常写盘的 git
+（`D:/Godot/tools/git/cmd/git.exe`，官方便携版），日常 `git add/commit/push` 直接用它。
+当时写这个工具，是因为 PATH 上的那份 git（ComfyUI 自带）连 `.git` 目录都建不出来
+（`git init` 报 Permission denied），但普通进程可以正常写文件，于是用纯 Python 的
+dulwich 生成标准格式的仓库，再交给真正的 git 推。
+
+留在这里是为了：换一台机器、手上只有 python 没有可用 git 时还能开工。
 
     python tools/make_repo.py
     python tools/make_repo.py -m "自定义提交信息"
