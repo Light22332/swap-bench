@@ -156,6 +156,7 @@ function renderSheet() {
     if (thumb && S.personUrl) {
       holdToCompare(cell, thumb);
       cell.title = '点开看检验单；按住看原片';
+      cell.setAttribute('aria-label', cell.getAttribute('aria-label') + '，空格键切换原片');
     }
 
     cell.addEventListener('click', () => {
@@ -276,6 +277,21 @@ function holdToCompare(cell, img) {
   cell.addEventListener('pointerup', hide);
   cell.addEventListener('pointerleave', hide);
   cell.addEventListener('pointercancel', hide);
+
+  // 键盘等价物：空格切换。不拦的话空格会触发按钮点击、把检验单打开
+  cell.addEventListener('keydown', (ev) => {
+    if (ev.key !== ' ' && ev.key !== 'Spacebar') return;
+    ev.preventDefault();
+    if (showing) {
+      hide();
+    } else {
+      saved = img.src;
+      img.src = S.personUrl;
+      cell.classList.add('tip-original');
+      showing = true;
+    }
+  });
+  cell.addEventListener('blur', hide);
 }
 
 /** 整批下载：有图才出现，指向当前这次任务。 */
