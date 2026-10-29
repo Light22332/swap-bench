@@ -85,11 +85,14 @@ def load_job(jid):
 
 
 def _spent(recs, metrics=None):
-    """一次任务花了多少钱。老记录里没有 total_cost，就从每条 generate 的 cost 加起来。"""
+    """一次任务花了多少钱。老记录里没有 total_cost，就从每条 generate 的 cost 加起来。
+
+    统一返回 float：不加这层，纯本地跑的一批会返回 int 0，接口结构检查会当成类型变了。
+    """
     metrics = metrics or {}
     if metrics.get("total_cost"):
-        return metrics["total_cost"]
-    return round(sum((r.get("cost") or 0) for r in recs if r.get("stage") == "generate"), 4)
+        return float(metrics["total_cost"])
+    return round(float(sum((r.get("cost") or 0) for r in recs if r.get("stage") == "generate")), 4)
 
 
 def list_jobs(limit=60):
