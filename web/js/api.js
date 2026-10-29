@@ -10,6 +10,18 @@ export function getConfig() {
   return fetch('/api/config').then(json);
 }
 
+export function getSettings() {
+  return fetch('/api/settings').then(json);
+}
+
+export function saveSettings(payload) {
+  return fetch('/api/settings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }).then(json);
+}
+
 export function getJob(id) {
   return fetch('/api/job/' + id).then(json);
 }

@@ -1,0 +1,97 @@
+/* 设置抽屉：只改服务地址这类东西，主流程不碰它。
+
+   抽屉外壳复用 .ledger 的样式（右边滑出、发丝线），这里只写表单。 */
+
+.settings-form {
+  margin-top: 4px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.set-row {
+  display: block;
+  margin-bottom: 15px;
+}
+
+.set-row > span {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+
+.set-row em {
+  display: block;
+  margin-top: 4px;
+  font-style: normal;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--ash);
+}
+
+.set-row input,
+.set-row select {
+  width: 100%;
+  padding: 7px 9px;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--rule);
+  border-radius: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.set-row select {
+  background-image: linear-gradient(45deg, transparent 50%, var(--ash) 50%),
+                    linear-gradient(135deg, var(--ash) 50%, transparent 50%);
+  background-position: calc(100% - 16px) 52%, calc(100% - 11px) 52%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 26px;
+}
+
+.set-row input:hover,
+.set-row select:hover { border-color: var(--ink); }
+
+.set-row input:focus-visible,
+.set-row select:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+  background: #fff;
+}
+
+.set-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.set-save {
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--table);
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  padding: 8px 18px;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.set-save:hover { background: var(--table); color: var(--ink); }
+.set-save:focus-visible { outline: 2px solid var(--seal); outline-offset: 2px; }
+
+.set-msg {
+  font-size: 12px;
+  color: var(--ash);
+}
+
+.set-msg.is-error { color: var(--seal); }

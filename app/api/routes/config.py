@@ -21,6 +21,10 @@ def _all_present(folder, names):
 
 
 def handle_get(req):
+    if req.path == "/api/settings":
+        req.json(app_config.settings_snapshot(state.get_config()))
+        return True
+
     if req.path != "/api/config":
         return False
     cfg = state.get_config()
@@ -44,8 +48,33 @@ def handle_get(req):
 
 
 def handle_post(req):
+    if req.path == "/api/settings":
+        return _save_settings(req)
     if req.path != "/api/config":
         return False
     state.update_config(req.body())
     req.json({"ok": True})
+    return True
+
+
+def _save_settings(req):
+    """改地址这类设置：写进 config.json，立刻生效，不用重启。"""
+    data = req.body() or {}
+
+    backend = data.get("backend")
+    if backend not in (None, "", "comfyui", "cloud"):
+        req.json({"error": "后端只能是 comfyui 或 cloud"}, 400)
+        return True
+
+    now = app_config.settings_snapshot(state.get_config())
+    will = data.get("backend") or backend or now["backend"]
+    cloud_url = (data.get("cloud.base_url") or now["cloud.base_url"]).strip()
+    if will == "cloud" and not cloud_url:
+        req.json({"error": "要用云端后端，得先把云端地址填上（现在还是空的）"}, 400)
+        return True
+
+    changed = app_config.save_settings(data)
+    state.load_config()
+    req.json({"ok": True, "changed": changed,
+              "backend": app_config.backend(state.get_config())})
     return True

@@ -7,6 +7,7 @@ import { $, S } from './state.js';
 import { hint, render, renderLedger, syncRun } from './render.js';
 import { addGarments, addPerson, isImage, renderChips, wireDrop } from './upload.js';
 import { startRun, stopRun } from './run.js';
+import { initSettings } from './settings.js';
 
 async function boot() {
   try {
@@ -121,6 +122,7 @@ function closeLedger() {
 
 $('ledger-open').addEventListener('click', openLedger);
 $('ledger-close').addEventListener('click', closeLedger);
+initSettings();
 document.addEventListener('keydown', (ev) => {
   if (ev.key === 'Escape' && !$('ledger').hidden) closeLedger();
 });

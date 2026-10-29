@@ -50,16 +50,36 @@ def _merge(base, over):
 
 
 def load(path=None):
-    """读 config.json 并补全默认值。文件坏了直接抛，早失败比带着错配置跑好。"""
+    """读 config.json 并补全默认值。文件坏了直接抛，早失败比带着错配置跑好。
+
+    项目根上如果有 config.local.json，就再盖一层上去——那是本机私有的，
+    被 .gitignore 挡着，密钥这类东西放那儿才不会被推到公开仓库。
+    """
     path = path or paths.CONFIG_FILE
     with open(path, encoding="utf-8") as f:
         raw = json.load(f)
     cfg = _merge(DEFAULTS, raw)
+    local = _local_file(path)
+    if os.path.isfile(local):
+        with open(local, encoding="utf-8") as f:
+            cfg = _merge(cfg, json.load(f))
     cfg.setdefault("paths", {})
     cfg["paths"].setdefault("outputs", paths.OUTPUTS)
     cfg["paths"].setdefault("runs", paths.RUNS)
     cfg["paths"].setdefault("uploads", paths.UPLOADS)
     return cfg
+
+
+def _local_file(path):
+    return os.path.join(os.path.dirname(os.path.abspath(path)), "config.local.json")
+
+
+def _write_json(path, data):
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+        f.write("\n")
+    os.replace(tmp, path)
 
 
 def section(cfg, name):
@@ -115,3 +135,77 @@ def comfyui_dir(cfg):
 def desktop_python(cfg):
     """起 ComfyUI 用哪个 python。没配就用当前这个解释器。"""
     return (cfg.get("desktop") or {}).get("python") or sys.executable
+
+
+# 页面上能改的字段，点分路径。别的键一律不收：指令、采样、模型文件名这些
+# 改错了软件直接跑不起来，不该出现在设置面板里。
+EDITABLE = (
+    "backend",
+    "comfyui.base_url",
+    "comfyui.input_dir",
+    "cloud.base_url",
+    "cloud.api_key",
+    "cloud.model",
+)
+
+# 落盘时单独存 config.local.json 的键：这个值进版本库就等于把 key 公开了。
+SECRETS = ("cloud.api_key",)
+
+
+def _walk_get(data, key):
+    cur = data
+    for part in key.split("."):
+        if not isinstance(cur, dict):
+            return ""
+        cur = cur.get(part, "")
+    return cur
+
+
+def _walk_set(data, key, value):
+    parts = key.split(".")
+    cur = data
+    for part in parts[:-1]:
+        nxt = cur.get(part)
+        if not isinstance(nxt, dict):
+            nxt = {}
+            cur[part] = nxt
+        cur = nxt
+    cur[parts[-1]] = value
+
+
+def settings_snapshot(cfg):
+    """设置面板要显示的那几项，按 EDITABLE 的顺序给。"""
+    return {key: _walk_get(cfg, key) for key in EDITABLE}
+
+
+def save_settings(values, path=None):
+    """把改动写回配置文件，返回真正变了的键。
+
+    密钥不落在 config.json 里（那个文件在版本库中），单独存 config.local.json，
+    它被 .gitignore 挡着。其余字段先读原文再合，免得把默认值一股脑烤进文件。
+    """
+    path = path or paths.CONFIG_FILE
+    local_path = _local_file(path)
+    with open(path, encoding="utf-8") as f:
+        raw = json.load(f)
+    local = {}
+    if os.path.isfile(local_path):
+        with open(local_path, encoding="utf-8") as f:
+            local = json.load(f)
+
+    changed = []
+    for key in EDITABLE:
+        if key not in values:
+            continue
+        val = values[key]
+        val = val.strip() if isinstance(val, str) else str(val)
+        bucket = local if key in SECRETS else raw
+        if _walk_get(bucket, key) != val:
+            _walk_set(bucket, key, val)
+            changed.append(key)
+
+    if changed:
+        _write_json(path, raw)
+        if local:
+            _write_json(local_path, local)
+    return changed

@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="/static/css/bench.css">
 <link rel="stylesheet" href="/static/css/docket.css">
 <link rel="stylesheet" href="/static/css/ledger.css">
+<link rel="stylesheet" href="/static/css/settings.css">
 <link rel="stylesheet" href="/static/css/responsive.css">
 </head>
 <body>
@@ -24,6 +25,7 @@
   <div class="masthead-side">
     <div class="tag" id="judge-tag" role="status">读取中…</div>
     <div class="tag" id="backend-tag" role="status">读取中…</div>
+    <button class="ledger-open" id="settings-open" type="button">设置</button>
     <button class="ledger-open" id="ledger-open" type="button">存档</button>
   </div>
 </header>
@@ -116,6 +118,61 @@
   <ol class="ledger-list" id="ledger-list"></ol>
 </section>
 
-<script type="module" src="/static/js/main.js"></script>
-</body>
+<section class="ledger settings" id="settings" hidden aria-label="设置：换装服务地址">
+  <div class="ledger-head">
+    <h2>设置</h2>
+    <button class="close" id="settings-close" type="button" aria-label="关闭">×</button>
+  </div>
+  <p class="ledger-note">平时不用动。换机器、或者想改用云端接口的时候才改。改完立刻生效，不用重启。</p>
+  <form class="settings-form" id="settings-form">
+    <label class="set-row">
+      <span>用哪个来换</span>
+      <select data-key="backend">
+        <option value="comfyui">本地（ComfyUI）</option>
+        <option value="cloud">云端（要自己的 key）</option>
+      </select>
+    </label>
+
+    <label class="set-row">
+      <span>本地地址</span>
+      <input type="text" data-key="comfyui.base_url" inputmode="url"
+             autocomplete="off" spellcheck="false" placeholder="http://127.0.0.1:8188">
+      <em>ComfyUI 在哪个端口，默认 8188。</em>
+    </label>
+
+    <label class="set-row">
+      <span>ComfyUI 收图目录</span>
+      <input type="text" data-key="comfyui.input_dir"
+             autocomplete="off" spellcheck="false" placeholder="D:\Comfyui\ComfyUI\input">
+      <em>输入图要先放进这个目录，ComfyUI 才读得到。</em>
+    </label>
+
+    <label class="set-row">
+      <span>云端地址</span>
+      <input type="text" data-key="cloud.base_url" inputmode="url"
+             autocomplete="off" spellcheck="false" placeholder="https://example.com/v1">
+      <em>按 OpenAI images/edits 的形状调用。空着就别选云端。</em>
+    </label>
+
+    <label class="set-row">
+      <span>云端密钥</span>
+      <input type="password" data-key="cloud.api_key"
+             autocomplete="off" spellcheck="false" placeholder="sk-…">
+      <em>存在 config.local.json 里，那个文件不进版本库。</em>
+    </label>
+
+    <label class="set-row">
+      <span>云端模型名</span>
+      <input type="text" data-key="cloud.model"
+             autocomplete="off" spellcheck="false" placeholder="gpt-image-1">
+    </label>
+
+    <div class="set-actions">
+      <button class="set-save" type="submit">保存</button>
+      <span class="set-msg" id="settings-msg" role="status" aria-live="polite"></span>
+    </div>
+  </form>
+</section>
+
+<script type="module" src="/static/js/main.js"></script></body>
 </html>
