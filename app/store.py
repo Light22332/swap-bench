@@ -59,11 +59,15 @@ def compute_metrics(cases, judge_mode):
                 for f in a.get("failures", []) or []:
                     reasons[f] = reasons.get(f, 0) + 1
 
+    escapes = sum(1 for c in cases for a in c.get("attempts", [])
+                  if a.get("stage") == "generate" and a.get("mode") == "escape")
+
     return {
         "cases": total,
         "first_pass_rate": round(first_pass / total, 3) if total else 0,
         "final_pass_rate": round(final_pass / total, 3) if total else 0,
         "avg_attempts": round(sum(attempts) / len(attempts), 2) if attempts else 0,
+        "escape_attempts": escapes,
         "avg_generate_s": round(sum(latencies) / len(latencies), 1) if latencies else 0,
         "total_generate_s": round(sum(latencies), 1),
         "judge_mode": judge_mode,

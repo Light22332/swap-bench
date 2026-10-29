@@ -64,7 +64,8 @@ def run_job(job, config):
     store = Store(config.get("paths", {}).get("runs", os.path.join(ROOT, "runs")))
     backend = make_backend(config.get("backend"), config)
     judge = make_judge(config)
-    max_attempts = config.get("pipeline", {}).get("max_attempts", 2)
+    pipeline_cfg = config.get("pipeline", {})
+    max_attempts = pipeline_cfg.get("max_attempts", 2)
     sampling = config.get("sampling", {})
     prep_cfg = config.get("prep", {})
     prep_dir = os.path.join(config.get("paths", {}).get("outputs", os.path.join(ROOT, "outputs")), "prep")
@@ -80,7 +81,9 @@ def run_job(job, config):
                           "garments": [g["name"] for g in job.garments],
                           "backend": backend.name, "judge_mode": judge.mode,
                           "prep": do_prep, "prep_mode": prep_mode,
-                          "max_attempts": max_attempts})
+                          "max_attempts": max_attempts,
+                          "escape_attempts": pipeline_cfg.get("escape_attempts", 0),
+                          "escape_cfg": pipeline_cfg.get("escape_cfg", 2.0)})
 
     for case, garment in zip(job.cases, job.garments):
         case["state"] = "running"
@@ -97,16 +100,25 @@ def run_job(job, config):
 
         instruction = job.instruction
         tried = []          # [(verdict, gen_result)]
+        escape_cfg = pipeline_cfg.get("escape_cfg", 2.0)
+        escape_left = max(0, int(pipeline_cfg.get("escape_attempts", 0)))
+        total_attempts = max_attempts + escape_left
 
-        for attempt in range(1, max_attempts + 1):
+        for attempt in range(1, total_attempts + 1):
+            # attempt > max_attempts 的那几轮是"降级重跑"：回到原始指令、把 cfg 抬起来，
+            # 靠负向提示词生效换一条路，而不是继续在越来越长的约束里打转。
+            escaping = attempt > max_attempts
             case["attempts_used"] = attempt
+            mode = "escape" if escaping else ("base" if attempt == 1 else "refine")
+            cfg_now = escape_cfg if escaping else sampling.get("cfg", 1.0)
+            instr_now = job.instruction if escaping else instruction
 
             req = GenRequest(
                 person_path=job.person_path,
                 garment_path=ref_path,
-                instruction=instruction,
+                instruction=instr_now,
                 negative=job.negative,
-                cfg=sampling.get("cfg", 1.0),
+                cfg=cfg_now,
                 steps=sampling.get("steps", 40),
                 resolution=sampling.get("resolution", 1024),
                 seed=None,
@@ -121,7 +133,7 @@ def run_job(job, config):
 
             if gen is None or not gen.ok:
                 rec = {"stage": "generate", "case": case["index"], "attempt": attempt,
-                       "garment": case["garment"], "ok": False,
+                       "garment": case["garment"], "ok": False, "mode": mode,
                        "error": job.error,
                        "error_kind": getattr(gen, "error_kind", "exception")}
                 case["attempts"].append(rec)
@@ -129,7 +141,8 @@ def run_job(job, config):
                 break
 
             grec = {"stage": "generate", "case": case["index"], "attempt": attempt,
-                    "garment": case["garment"], "ok": True,
+                    "garment": case["garment"], "ok": True, "mode": mode,
+                    "cfg": cfg_now, "instruction_used": instr_now,
                     "latency_s": round(gen.latency_s, 2), "backend": gen.backend,
                     "model": gen.model, "seed": gen.seed, "cost": gen.cost,
                     "image": gen.image_path, "meta": gen.meta}
@@ -138,7 +151,8 @@ def run_job(job, config):
 
             verdict = judge(job.person_path, gen.image_path, ref_path)
             jrec = {"stage": "judge", "case": case["index"], "attempt": attempt,
-                    "garment": case["garment"], "mode": verdict["mode"],
+                    "garment": case["garment"], "mode": mode,
+                    "judge_mode": verdict["mode"],
                     "passed": verdict["passed"], "score": verdict["score"],
                     "failures": verdict["failures"], "checks": verdict["checks"],
                     "latency_s": verdict["latency_s"], "note": verdict["note"]}
@@ -156,17 +170,30 @@ def run_job(job, config):
                                       "reason": "只有非关键项不过，不再重试",
                                       "failures": verdict["failures"]})
                 break
+            if escaping:
+                # 降级重跑也不过，没有更多手段了，别再烧时间
+                store.append(job.id, {"stage": "stop", "case": case["index"],
+                                      "attempt": attempt,
+                                      "reason": "降级重跑仍不过，放弃",
+                                      "failures": verdict["failures"]})
+                break
+            if attempt >= total_attempts:
+                break
 
             clauses = fix_clauses(verdict["failures"])
-            if not clauses or attempt == max_attempts:
-                break
-            instruction = (
-                job.instruction
-                + "\n\n本次必须修正：" + "；".join(clauses)
-                + "\n注意：仍然必须完成服装替换，不得退回图1的原有衣服。"
-            )
-            store.append(job.id, {"stage": "refine", "case": case["index"],
-                                  "attempt": attempt, "added": clauses})
+            if clauses:
+                instruction = (
+                    job.instruction
+                    + "\n\n本次必须修正：" + "；".join(clauses)
+                    + "\n注意：仍然必须完成服装替换，不得退回图1的原有衣服。"
+                )
+                store.append(job.id, {"stage": "refine", "case": case["index"],
+                                      "attempt": attempt, "added": clauses})
+            else:
+                # 没有可补的约束，下一轮直接走降级
+                store.append(job.id, {"stage": "refine", "case": case["index"],
+                                      "attempt": attempt, "added": [],
+                                      "reason": "没有可补的约束，下一轮降级"})
 
         # ---- 挑最好的一张：先看通过，再看分数 ----
         if tried:

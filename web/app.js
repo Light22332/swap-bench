@@ -505,12 +505,13 @@ function renderDocket(c) {
   ul.className = 'attempts';
   (c.attempts || []).forEach((a) => {
     const li = document.createElement('li');
+    const tag = a.mode === 'escape' ? ' · 降级重跑' : '';
     if (a.stage === 'generate') {
       li.textContent = a.ok
-        ? `第 ${a.attempt} 次 · 生成 ${a.latency_s.toFixed(1)}s · seed ${a.seed ?? '—'}`
-        : `第 ${a.attempt} 次 · 生成失败（${a.error_kind || '未知'}）`;
+        ? `第 ${a.attempt} 次${tag} · 生成 ${a.latency_s.toFixed(1)}s · seed ${a.seed ?? '—'}`
+        : `第 ${a.attempt} 次${tag} · 生成失败（${a.error_kind || '未知'}）`;
     } else {
-      li.textContent = `第 ${a.attempt} 次 · 检查${a.passed ? '通过' : '不过 ' + (a.failures || []).length + ' 项'} · ${a.latency_s.toFixed(1)}s`;
+      li.textContent = `第 ${a.attempt} 次${tag} · 检查${a.passed ? '通过' : '不过 ' + (a.failures || []).length + ' 项'} · ${a.latency_s.toFixed(1)}s`;
     }
     ul.append(li);
   });
@@ -523,7 +524,9 @@ function renderMetrics() {
   const pct = (v) => (v == null ? '—' : Math.round(v * 100) + '%');
   $('m-final').textContent = pct(m.final_pass_rate);
   $('m-first').textContent = pct(m.first_pass_rate);
-  $('m-att').textContent = m.avg_attempts != null ? m.avg_attempts : '—';
+  $('m-att').textContent = m.avg_attempts != null
+    ? (m.escape_attempts ? `${m.avg_attempts}（降级 ${m.escape_attempts} 次）` : m.avg_attempts)
+    : '—';
   $('m-lat').textContent = m.avg_generate_s ? m.avg_generate_s + 's' : '—';
   $('m-total').textContent = m.total_generate_s ? m.total_generate_s + 's' : '—';
 }
