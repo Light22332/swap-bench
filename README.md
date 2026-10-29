@@ -1,10 +1,20 @@
-# 换装验收台
+# 换装验收台 · Swap Bench
 
-把「把一件衣服换到一个人身上」做成一条有验收标准的生产线，而不是点一次按钮看运气。
+给一张人像和一件衣服，把衣服换到人身上；换完之后**自己验收**，不合格的自动返工，最后从所有尝试里挑最好的那张。全部跑在本地。
 
-**用起来只有两步：放一张人像，放一件衣服。不用写指令，不用点按钮，放完自动开始。**
+> **Swap Bench** is a local garment-swap pipeline that checks its own output.
+> You drop one person photo and one garment photo; it generates the swap with Qwen-Image 2.1
+> in ComfyUI, then verifies the result with face recognition (YuNet + SFace) and structural
+> checks, retries only when the person or the clothing is wrong, and keeps the best attempt.
+> Runs on a 16 GB laptop GPU, ~55 s per image, no cloud API.
 
-本地跑 Qwen-Image 2.1（INT8，16GB 显存），生成后自动做 4 项检查，不合格的图不是扔掉重来，而是把失败原因翻译成新的约束句再喂回去，最后从所有尝试里挑最好的一张。
+**核心不是"能生成"，是"怎么知道自己出的图行不行"。**
+
+- **用起来**：放两张图，点一下，等 55 秒
+- **质检**：4 项真判定——人脸相似度、身体区域变化、背景主色、人脸数量
+- **不装的**：手部、文字水印判不了就不列，页面直说"需人看一眼"
+- **证据**：每次尝试一行 JSONL，批次给出合格率、重试次数、失败原因分布
+- **跑在哪**：本地 16GB 显存，零云成本；云端后端接口也留了
 
 ![界面](outputs/page.png)
 
