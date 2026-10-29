@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+node_modules/
+.electron-data/
+logs/
+dist/
+uploads/
+runs/
+samples/*
+!samples/README.md
+models/*.onnx
+outputs/**
+!outputs/page.png
+!outputs/electron-window.png
+config.local.json
+发布到git.bat

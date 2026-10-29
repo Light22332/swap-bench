@@ -1,0 +1,45 @@
+{
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8770
+  },
+  "desktop": {
+    "python": "D:\\Comfyui\\python\\python.exe",
+    "comfyui_dir": "D:\\Comfyui",
+    "start_comfyui": true
+  },
+  "backend": "comfyui",
+  "models_dir": "models",
+  "prep": {
+    "enabled": true
+  },
+  "comfyui": {
+    "base_url": "http://127.0.0.1:8188",
+    "input_dir": "D:\\Comfyui\\ComfyUI\\input"
+  },
+  "models": {
+    "unet": "qwen_image_2.1_int8_convrot.safetensors",
+    "clip": "qwen3vl_8b_int8_convrot.safetensors",
+    "vae": "qwen_image_2.1_vae_bf16.safetensors",
+    "lora": "Qwen-Image-2.1 NSW Image Edit.safetensors",
+    "lora_strength": 1.0
+  },
+  "sampling": {
+    "cfg": 1.0,
+    "steps": 40,
+    "resolution": 1024,
+    "sampler": "euler",
+    "scheduler": "simple"
+  },
+  "cloud": {
+    "base_url": "",
+    "api_key": "",
+    "model": "",
+    "timeout": 120
+  },
+  "pipeline": {
+    "max_attempts": 2
+  },
+  "instruction": "把图1人物身上的衣服，换成图2里的那件衣服。\n只取图2的衣服：款式、颜色、面料、毛领、系带等所有细节。\n不要取图2的其他任何东西：里面的人、脸、头发、手、手机、首饰、姿势、背景和光线。\n图1必须保持不变：五官、脸型、发型、肤色、表情、体型、站姿、双手位置、背景和光线。",
+  "negative": "改变脸部, 改变发型, 改变姿势, 改变背景, 多余的人物, 水印, 文字"
+}

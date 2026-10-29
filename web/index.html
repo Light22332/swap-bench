@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#E7E6E2">
+<title>换衣服</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<a class="skip" href="#sheet">跳到结果</a>
+
+<header class="masthead">
+  <div class="masthead-main">
+    <h1>换衣服</h1>
+    <p class="lede">放一张人、一张衣服，点一下按钮开始换</p>
+  </div>
+  <div class="masthead-side">
+    <div class="tag" id="judge-tag" role="status">读取中…</div>
+    <div class="tag" id="backend-tag" role="status">读取中…</div>
+  </div>
+</header>
+
+<main class="bench">
+
+  <aside class="inputs">
+    <ol class="flow">
+      <li class="field">
+        <h2 class="field-title"><span class="num">1</span>放人像</h2>
+        <label class="slot slot-person" id="slot-person">
+          <input type="file" accept="image/*" id="file-person" class="sr-only">
+          <span class="slot-empty">点这里，或把照片拖进来</span>
+          <img class="slot-preview" id="preview-person" alt="" hidden>
+        </label>
+        <p class="tip">要换衣服的那个人。正脸、全身照效果最好。</p>
+      </li>
+
+      <li class="field">
+        <h2 class="field-title"><span class="num">2</span>放衣服</h2>
+        <label class="slot slot-garment" id="slot-garment">
+          <input type="file" accept="image/*" id="file-garment" class="sr-only" multiple>
+          <span class="slot-empty">点这里，或把衣服图拖进来</span>
+        </label>
+        <ul class="chips" id="garment-chips"></ul>
+        <p class="tip">想换上的那件。一次放好几件也行，每件出一张。</p>
+      </li>
+
+      <li class="field">
+        <h2 class="field-title"><span class="num">3</span>开始</h2>
+        <button class="go" id="run" type="button" disabled>开始换</button>
+        <p class="hint" id="hint" role="status" aria-live="polite">两张放好之后，点上面的按钮开始。</p>
+        <button class="link" id="demo" type="button">没图？载入示例看看</button>
+        <button class="link" id="rerun" type="button" hidden>重新跑一次</button>
+      </li>
+    </ol>
+
+    <details class="advanced">
+      <summary>高级设置</summary>
+      <label class="mini" for="instruction">换装指令</label>
+      <textarea id="instruction" rows="6" spellcheck="false"></textarea>
+      <p class="tip">一般不用改。换出来不像时，可以在这里补一句要求。</p>
+    </details>
+  </aside>
+
+  <section class="work">
+
+    <div class="rail-wrap">
+      <div class="rail-caption">
+        <span id="rail-case">还没开始</span>
+        <span class="rail-num" id="rail-num">—</span>
+      </div>
+      <ol class="rail" id="rail" aria-live="polite">
+        <li class="step" data-step="submit"><span class="step-no">①</span><span class="step-name">提交</span><span class="step-time">—</span></li>
+        <li class="step" data-step="generate"><span class="step-no">②</span><span class="step-name">生成</span><span class="step-time">—</span></li>
+        <li class="step" data-step="judge"><span class="step-no">③</span><span class="step-name">质检</span><span class="step-time">—</span></li>
+        <li class="step" data-step="accept"><span class="step-no">④</span><span class="step-name">采纳</span><span class="step-time">—</span></li>
+      </ol>
+    </div>
+
+    <div class="sheet is-empty" id="sheet" aria-live="polite" aria-label="换装结果">
+      <p class="sheet-empty">把两张图放进左边，换好的样子会出现在这里。</p>
+    </div>
+
+    <section class="docket" id="docket" hidden aria-label="这张图的详情">
+      <div class="docket-head">
+        <h2 id="docket-title">这张图</h2>
+        <div class="docket-actions">
+          <a class="save" id="save-link" href="#" download>保存这张图</a>
+          <button class="close" id="docket-close" type="button" aria-label="关闭">×</button>
+        </div>
+      </div>
+      <div class="docket-body" id="docket-body"></div>
+    </section>
+
+    <footer class="metrics" id="metrics">
+      <div class="metric"><span class="metric-k">合格率</span><span class="metric-v" id="m-final">—</span></div>
+      <div class="metric"><span class="metric-k">首轮通过</span><span class="metric-v" id="m-first">—</span></div>
+      <div class="metric"><span class="metric-k">平均重试</span><span class="metric-v" id="m-att">—</span></div>
+      <div class="metric"><span class="metric-k">平均生成</span><span class="metric-v" id="m-lat">—</span></div>
+      <div class="metric"><span class="metric-k">累计生成</span><span class="metric-v" id="m-total">—</span></div>
+    </footer>
+
+  </section>
+</main>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

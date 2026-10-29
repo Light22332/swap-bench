@@ -1,0 +1,18 @@
+{
+  "name": "swap-bench",
+  "productName": "换装验收台",
+  "version": "0.1.0",
+  "description": "本地服装换装生产线：生成 → 质检 → 返工 → 挑最优",
+  "main": "electron/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "smoke": "electron . --smoke"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0"
+  },
+  "allowScripts": {
+    "electron@33.4.11": true
+  }
+}
