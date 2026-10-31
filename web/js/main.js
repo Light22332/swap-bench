@@ -4,7 +4,7 @@
 
 import { getConfig, getHistory, getJob, getMetrics, loadSamples, uploadFile, extractGarment } from './api.js';
 import { $, S } from './state.js';
-import { hint, money, render, renderLedger, syncRun } from './render.js';
+import { hint, money, render, renderLedger, syncRun, closeDocket } from './render.js';
 import { addGarments, addPerson, isImage, renderChips, wireDrop } from './upload.js';
 import { startRun, stopRun } from './run.js';
 import { initSettings } from './settings.js';
@@ -40,6 +40,8 @@ async function loadHistory(id) {
   try {
     const job = await getJob(id);
     if (!job || !job.cases) throw new Error('没有这次记录');
+    // 窄屏上把结果排到前面：记录页先看的是一排图，不是两个空槽
+    document.body.classList.add('is-history');
     S.cases = job.cases;
     S.metrics = job.metrics;
     S.judgeMode = job.metrics && job.metrics.judge_mode;
@@ -72,7 +74,7 @@ $('file-garment').addEventListener('change', (ev) => {
   ev.target.value = '';
 });
 
-$('docket-close').addEventListener('click', () => { $('docket').hidden = true; });
+$('docket-close').addEventListener('click', closeDocket);
 
 $('run').addEventListener('click', startRun);
 $('stop').addEventListener('click', stopRun);
@@ -153,7 +155,9 @@ $('ledger-open').addEventListener('click', openLedger);
 $('ledger-close').addEventListener('click', closeLedger);
 initSettings();
 document.addEventListener('keydown', (ev) => {
-  if (ev.key === 'Escape' && !$('ledger').hidden) closeLedger();
+  if (ev.key !== 'Escape') return;
+  if (!$('docket').hidden) { closeDocket(); return; }
+  if (!$('ledger').hidden) closeLedger();
 });
 
 $('rerun').addEventListener('click', () => {
@@ -178,5 +182,18 @@ wireDrop(document.body, (files) => {
 
 document.addEventListener('dragover', (e) => e.preventDefault());
 document.addEventListener('drop', (e) => e.preventDefault());
+
+/* 粘贴：从相册/网页复制的图，Ctrl+V 直接进来（人像空着就先当人像） */
+document.addEventListener('paste', (ev) => {
+  const items = [...((ev.clipboardData && ev.clipboardData.items) || [])];
+  const files = items
+    .filter((it) => it.kind === 'file')
+    .map((it) => it.getAsFile())
+    .filter((f) => f && isImage(f));
+  if (!files.length) return;
+  ev.preventDefault();
+  if (!S.person) addPerson(files[0]);
+  else addGarments(files);
+});
 
 boot();

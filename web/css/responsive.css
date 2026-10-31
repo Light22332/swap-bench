@@ -29,6 +29,10 @@
   .chips { max-height: 78px; overflow-y: auto; }
 
   .work { padding-top: 12px; }
+
+  /* 记录页在窄屏上先把结果顶上来，别让人先看一屏空槽 */
+  body.is-history .work { order: 1; }
+  body.is-history .inputs { order: 2; }
 }
 
 /* 再窄一点：报头那排挤不下时，把"本地/云端"这个纯说明性的标签收起来 */
@@ -41,6 +45,14 @@
   .tag { font-size: 10px; padding: 2px 6px; }
   .ledger-open { font-size: 10.5px; padding: 3px 7px; }
   .inputs, .work-foot { padding-left: 16px; padding-right: 16px; }
+
+  /* 手指点得准：按钮和关闭至少 34px 见方 */
+  .ledger-open, .save { min-height: 34px; padding: 6px 10px; }
+  .close { min-width: 34px; min-height: 34px; }
+  .docket-actions { gap: 10px; }
+  .docket-head h2 { font-size: 14px; }
+  /* 五行检查一行一条，别挤成两列小字 */
+  .check-grid { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {

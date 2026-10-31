@@ -62,6 +62,12 @@ export function render() {
   }
 }
 
+/** 关掉检验单。必须一起清 S.selected，否则下一次 render 又把它画回来。 */
+export function closeDocket() {
+  S.selected = null;
+  $('docket').hidden = true;
+}
+
 function renderSheet() {
   const sheet = $('sheet');
   if (!S.cases.length) {
@@ -144,6 +150,7 @@ function renderSheet() {
 
 function renderDocket(c) {
   const box = $('docket');
+  const wasHidden = box.hidden;
   box.hidden = false;
   $('docket-title').textContent = `第 ${String(c.index).padStart(2, '0')} 件`;
 
@@ -159,6 +166,8 @@ function renderDocket(c) {
   }
 
   const body = $('docket-body');
+  // 每 1.5 秒会重画一次，技术细节如果展开着，重画后要还是展开的
+  const rawOpen = !!body.querySelector('details.raw')?.open;
   body.innerHTML = '';
 
   const jud = lastStage(c, 'judge');
@@ -190,6 +199,7 @@ function renderDocket(c) {
 
   const detail = document.createElement('details');
   detail.className = 'raw';
+  detail.open = rawOpen;
   const sum = document.createElement('summary');
   sum.textContent = '看每轮的技术细节';
   detail.append(sum);
@@ -227,6 +237,10 @@ function renderDocket(c) {
     ].filter(Boolean).join(' · ');
     body.append(line);
   }
+
+  // 刚打开时把它滚进视野：手机上详情可能整整在下面一屏，不滚一下会以为点了没反应。
+  // 用 nearest，桌面上本来就看得见时不乱跳。
+  if (wasHidden) box.scrollIntoView({ block: 'nearest' });
 }
 
 /** 钱的写法：美元用 $，人民币用 ¥；不到 1 块留三位小数，免得每张都显示 0.04。 */

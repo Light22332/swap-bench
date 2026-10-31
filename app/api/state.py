@@ -71,6 +71,9 @@ def cancel_job(jid):
     if job is None:
         return None
     if job.state == "queued":
+        # 队列线程只看 cancel_requested 决定开不开跑（queue.run_one），所以这里必须
+        # 一起打上标记；否则这一单会照跑，跑起来第一件事又是把 state 改回 running。
+        job.cancel_requested = True
         job.state = "cancelled"
         job.finished = time.time()
         return "queued"
