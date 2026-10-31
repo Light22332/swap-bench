@@ -293,6 +293,27 @@ README 里那两张图拍的是旧界面：`outputs/page.png` 停在「从照片
 
 ---
 
+## 磁盘清理与中断终态（2026-10-31 晚）
+
+**要什么**：`outputs/`、`uploads/`、ComfyUI 的 `input/` 都只写不删，几十次跑下来几百 MB；进程被杀掉的任务，存档页当它跑完了，半成品还盖「通过」章。
+
+**怎么做的**：
+
+1. `tools/clean.py`：按修改时间清五处——结果图（`outputs/` 根，只图片）、中间裁图（`outputs/prep`，递归）、缩略图缓存（`outputs/.thumbs`，递归）、上传原图（`uploads/`，递归，跳过 `sample_` 开头的样本）、ComfyUI `input/` 里我们拷进去的副本（只认 `src_person_` / `src_garment_` 前缀）。默认只打印清单，`--apply` 才删，`--days` 默认 7；只认普通文件，不跟符号链接，别人的图不动。
+2. `app/api/history.py` 按事件还原终态：有 `job_end` 且没有 cancel 事件 → `done`；有 cancel 事件 → `cancelled`；连 `job_end` 都没有 → `interrupted`。没判定过的 case 一律 `interrupted`，不再算「通过」；耗时没有 metrics 就用首尾 ts 差兜底。
+3. `list_jobs()` 以前只数 judge 事件，中断的单子直接被 `continue` 吞掉；现在按 generate 与 judge 的并集算件数，通过数仍只算判定过的。
+4. 前端章改「中断了」（`render.js` 的 `STAMP` 加 `interrupted`，格子空位文案也改）。
+
+**实测**：
+
+- `tools/clean.py --days 0` 在现在这个仓库上数出 233 个文件、241.2 MB（结果图 93 个 221.3 MB、ComfyUI input 副本 54 个 10.2 MB）；`--days 7`（默认）当前是 0 个，说明不会误删这次刚跑的东西。
+- `tools/tests/test_clean.py` 17 项：按天数、按目录、按前缀，样本图和别人的文件不动；`tools/tests/test_history.py` 16 项：done/cancelled/interrupted 三种还原、中断单不装通过、耗时 ts 兜底、残片不进存档。
+- `tools/check.py` 16/16。
+
+**留下的问题**：`clean.py` 没接进页面或启动脚本，得手动跑；`--days` 对所有目录一刀切（ComfyUI input 副本其实当天就能删）；缩略图缓存只在被清时删，不随原图删除回收。
+
+---
+
 ## 明确不做
 
 - **换脸**：目标是服装迁移，不是把人脸换上去

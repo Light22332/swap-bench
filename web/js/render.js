@@ -17,6 +17,8 @@ export const STAMP = {
   rejected: ['没换成', 'is-rejected'],
   failed: ['失败', 'is-rejected'],
   cancelled: ['停下了', 'is-live'],
+  // 进程被杀、没写出 job_end 的那单：不是 done，也不该写成"通过"
+  interrupted: ['中断了', 'is-rejected'],
 };
 
 const CHECK_LABELS = {
@@ -111,7 +113,8 @@ function renderSheet() {
       const v = document.createElement('span');
       v.className = 'cell-void';
       v.textContent = c.state === 'pending' ? '排队'
-        : c.state === 'cancelled' ? '没跑' : '正在换';
+        : c.state === 'cancelled' ? '没跑'
+        : c.state === 'interrupted' ? '中断了' : '正在换';
       frame.append(v);
     }
 

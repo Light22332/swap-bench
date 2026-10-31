@@ -6,6 +6,7 @@ import io
 import json
 import os
 import re
+import time
 import zipfile
 
 from ..core import config as app_config
@@ -18,8 +19,29 @@ def _store():
     return Store(app_config.runs_dir(state.get_config()))
 
 
+def _ts_seconds(text):
+    """JSONL 里的 ts 是 'YYYY-mm-ddTHH:MM:SS'，解析失败就当没时间。"""
+    try:
+        return time.mktime(time.strptime(text, "%Y-%m-%dT%H:%M:%S"))
+    except (TypeError, ValueError):
+        return None
+
+
+def _elapsed_from_ts(recs):
+    """没有 job_end（进程被杀）时，用第一条和最后一条的时间差当耗时。"""
+    stamps = [_ts_seconds(r.get("ts")) for r in recs]
+    stamps = [s for s in stamps if s is not None]
+    if len(stamps) < 2:
+        return 0
+    return round(max(stamps) - min(stamps), 1)
+
+
 def load_job(jid):
-    """重启后从 JSONL 把一次历史任务还原出来，让 ?job=xxx 的链接长期有效。"""
+    """重启后从 JSONL 把一次历史任务还原出来，让 ?job=xxx 的链接长期有效。
+
+    state 不能一律写 done：进程被杀时 JSONL 里没有 job_end，那单其实只跑了一半。
+    现在按有没有 job_end / cancel 事件还原成 done / cancelled / interrupted。
+    """
     store = _store()
     recs = store.read(jid)
     if not recs:
@@ -29,6 +51,7 @@ def load_job(jid):
     cases, metrics = {}, {}
     images = {}          # (case, attempt) -> 图片路径
     picked = {}          # case -> 选中的第几次
+    judged = set()       # 有判定记录的 case
 
     for r in recs:
         stage = r.get("stage")
@@ -39,7 +62,7 @@ def load_job(jid):
         elif stage in ("generate", "judge") and r.get("case") is not None:
             idx = r["case"]
             c = cases.setdefault(idx, {
-                "index": idx, "garment": r.get("garment", ""), "state": "passed",
+                "index": idx, "garment": r.get("garment", ""), "state": "pending",
                 "attempts": [], "attempts_used": 0, "passed": False,
                 "first_attempt_passed": False, "final_image": None,
                 "verdict": None, "instruction_used": "",
@@ -51,6 +74,7 @@ def load_job(jid):
                 images[(idx, r.get("attempt"))] = r.get("image")
                 c["final_image"] = r.get("image")
             if stage == "judge":
+                judged.add(idx)
                 c["attempts_used"] = r.get("attempt", 0)
                 c["passed"] = bool(r.get("passed"))
                 if r.get("attempt") == 1 and r.get("passed"):
@@ -71,10 +95,23 @@ def load_job(jid):
             cases[idx]["final_image"] = images[(idx, attempt)]
             cases[idx]["chosen_attempt"] = attempt
 
+    # 生成完但没判定的 case：那单被打断了，别写成"通过"
+    for idx, c in cases.items():
+        if idx not in judged:
+            c["state"] = "interrupted"
+
+    stages = {r.get("stage") for r in recs}
+    if "job_end" in stages:
+        final_state = "cancelled" if any(r.get("stage") == "cancel" for r in recs) else "done"
+    else:
+        final_state = "interrupted"
+
+    elapsed = metrics.get("total_generate_s") or _elapsed_from_ts(recs)
+
     return {
         "id": jid,
-        "state": "done",
-        "elapsed_s": metrics.get("total_generate_s", 0),
+        "state": final_state,
+        "elapsed_s": elapsed,
         "judge_mode": metrics.get("judge_mode", "rules"),
         "person": person,
         "cases": [cases[k] for k in sorted(cases)],
@@ -96,7 +133,11 @@ def _spent(recs, metrics=None):
 
 
 def list_jobs(limit=60):
-    """列出所有跑过的任务，最近的在前。只扫一遍 JSONL 的关键几行。"""
+    """列出所有跑过的任务，最近的在前。只扫一遍 JSONL 的关键几行。
+
+    中断的单子只有 generate、没有 judge，也要列出来（只是通过数按少的算），
+    不然它会从存档里凭空消失。
+    """
     store = _store()
     out = []
     for jid in store.all_jobs():
@@ -105,22 +146,23 @@ def list_jobs(limit=60):
             continue
         start = next((r for r in recs if r.get("stage") == "job_start"), {})
         end = next((r for r in recs if r.get("stage") == "job_end"), {})
-        by_case = {}
+        seen, passed = set(), set()
         for r in recs:
-            if r.get("stage") == "judge":
-                idx = r.get("case")
-                by_case.setdefault(idx, False)
-                by_case[idx] = by_case[idx] or bool(r.get("passed"))
-        if not by_case:
+            if r.get("stage") in ("generate", "judge") and r.get("case") is not None:
+                seen.add(r["case"])
+            if r.get("stage") == "judge" and r.get("passed"):
+                passed.add(r["case"])
+        if not seen:
             continue
         metrics = end.get("metrics") or {}
+        elapsed = metrics.get("total_generate_s") or _elapsed_from_ts(recs)
         out.append({
             "id": jid,
             "ts": start.get("ts", ""),
             "garments": start.get("garments") or [],
-            "cases": len(by_case),
-            "passed": sum(1 for v in by_case.values() if v),
-            "elapsed_s": metrics.get("total_generate_s", 0),
+            "cases": len(seen),
+            "passed": len(passed),
+            "elapsed_s": elapsed,
             "cost": _spent(recs, metrics),
         })
     out.sort(key=lambda j: j["ts"], reverse=True)
