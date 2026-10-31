@@ -314,6 +314,26 @@ README 里那两张图拍的是旧界面：`outputs/page.png` 停在「从照片
 
 ---
 
+## 轮询容错与请求体闸（2026-10-31 晚）
+
+**要什么**：ComfyUI 忙一下或网络抖一下，一次 `URLError` 就把整单判死；900 秒超时只有一句干等；HTTP 层不看 `Content-Length`，谁都能让服务端往内存里读几个 G。
+
+**怎么做的**：
+
+1. `comfyui._wait` 抽出 `_history()`；连续失败 5 次（`POLL_FAILS`）才报 `network`，中间 2s→10s 退避，成功一次就把间隔复位；总超时的报错改成「去 ComfyUI 控制台看看」。
+2. `server.py` 加 `MAX_BODY = 64MB`（30MB 原图 base64 约 40MB，留余量）；`Content-Length` 超上限直接回 413 并断开，请求体一个字节都不读。
+3. `history.py` 的 `elapsed_s` 统一转 `float`——老记录 `metrics` 里是 int 时，接口类型会在 int/float 之间漂。
+
+**实测**：
+
+- `tools/tests/test_comfyui.py` 9 项：两次抖动照样等到结果、一直连不上要连到第 5 次才放弃、OOM 认成 `vram`、其它错误认成 `node_error`、总超时能退出。
+- `tools/tests/test_http.py` 追加 413 两项：把 `MAX_BODY` 临时调成 1KB，发一个 2048 字节的 `Content-Length`（只发头不发体），立刻拿到 413 和「单张图上限 30MB」。
+- `tools/check.py` 17/17；`api_baseline.py check` 14 个接口一致（顺手把 `/api/job/<id>` 的 `elapsed_s` 记成 float）。
+
+**留下的问题**：卡死只靠总超时，没按 `/queue` 判断「任务从队列里消失了」；413 之后直接断连接，浏览器端只能看到网络错误；退避是固定 2/4/8/10 秒，没加随机抖动。
+
+---
+
 ## 明确不做
 
 - **换脸**：目标是服装迁移，不是把人脸换上去

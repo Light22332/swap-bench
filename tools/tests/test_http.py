@@ -69,6 +69,23 @@ try:
     r5.read()
     check("cancel 之后同一连接 GET 正常", r5.status == 200, str(r5.status))
     conn.close()
+
+    print("请求体上限：超过 MAX_BODY 直接回 413，不往内存里读")
+    old = api_server.MAX_BODY
+    api_server.MAX_BODY = 1024
+    try:
+        conn = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
+        conn.putrequest("POST", "/api/upload")
+        conn.putheader("Content-Type", "application/json")
+        conn.putheader("Content-Length", "2048")   # 只发头，不发体
+        conn.endheaders()
+        r6 = conn.getresponse()
+        body6 = r6.read().decode("utf-8", "replace")
+        check("超大请求体回 413", r6.status == 413, str(r6.status))
+        check("413 说清楚单张上限", "30MB" in body6, body6[:120])
+        conn.close()
+    finally:
+        api_server.MAX_BODY = old
 finally:
     srv.shutdown()
     srv.server_close()

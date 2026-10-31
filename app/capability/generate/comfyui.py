@@ -16,6 +16,9 @@ from ...core import config as app_config
 from .graph import build_swap_graph
 from .base import BackendError, GenResult
 
+# 轮询 /history 连续失败这么多次才放弃：一次 URLError 可能只是 ComfyUI 忙了一下
+POLL_FAILS = 5
+
 
 class ComfyUIBackend:
     name = "comfyui"
@@ -122,15 +125,36 @@ class ComfyUIBackend:
             raise BackendError("node_error", f"响应异常：{json.dumps(resp)[:400]}")
         return resp["prompt_id"]
 
+    def _history(self, pid):
+        """问一次 ComfyUI 跑完没有。失败让调用方决定重试还是放弃。"""
+        return json.load(urllib.request.urlopen(
+            f"{self.base_url}/history/{pid}", timeout=30))
+
     def _wait(self, pid, timeout=900, interval=2.0):
+        """等 ComfyUI 跑完。
+
+        网络抖一下不能把整单废掉：连续失败 POLL_FAILS 次才报错，中间退避重试。
+        一直没跑完就按总超时收场，报错里提示去看 ComfyUI 的控制台。"""
         t0 = time.time()
-        while time.time() - t0 < timeout:
+        fails = 0
+        base = interval
+        while True:
+            if time.time() - t0 >= timeout:
+                raise BackendError("timeout",
+                                   f"等待 {timeout}s 仍未完成（ComfyUI 可能卡住了，"
+                                   f"去看看它的控制台）")
             time.sleep(interval)
             try:
-                hist = json.load(urllib.request.urlopen(
-                    f"{self.base_url}/history/{pid}", timeout=30))
-            except urllib.error.URLError as e:
-                raise BackendError("network", f"轮询失败：{e.reason}")
+                hist = self._history(pid)
+            except (urllib.error.URLError, OSError, ValueError) as e:
+                fails += 1
+                if fails >= POLL_FAILS:
+                    reason = getattr(e, "reason", e)
+                    raise BackendError("network", f"轮询连续失败 {fails} 次：{reason}")
+                interval = min(interval * 2, 10.0)      # 退避，别把 ComfyUI 打爆
+                continue
+            fails = 0
+            interval = base
             if pid in hist:
                 status = hist[pid].get("status", {})
                 if status.get("status_str") == "error":
@@ -138,7 +162,6 @@ class ComfyUIBackend:
                     kind = "vram" if "out of memory" in msg.lower() else "node_error"
                     raise BackendError(kind, msg[:800])
                 return hist[pid]
-        raise BackendError("timeout", f"等待 {timeout}s 仍未完成")
 
     def _fetch(self, hist, prefix):
         for node_out in hist.get("outputs", {}).values():

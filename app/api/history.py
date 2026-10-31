@@ -106,7 +106,7 @@ def load_job(jid):
     else:
         final_state = "interrupted"
 
-    elapsed = metrics.get("total_generate_s") or _elapsed_from_ts(recs)
+    elapsed = float(metrics.get("total_generate_s") or _elapsed_from_ts(recs))
 
     return {
         "id": jid,
@@ -155,7 +155,7 @@ def list_jobs(limit=60):
         if not seen:
             continue
         metrics = end.get("metrics") or {}
-        elapsed = metrics.get("total_generate_s") or _elapsed_from_ts(recs)
+        elapsed = float(metrics.get("total_generate_s") or _elapsed_from_ts(recs))
         out.append({
             "id": jid,
             "ts": start.get("ts", ""),

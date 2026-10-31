@@ -85,7 +85,7 @@
           "verdict": "null"
         }
       ],
-      "elapsed_s": "int",
+      "elapsed_s": "float",
       "error": "null",
       "id": "str",
       "judge_mode": "str",

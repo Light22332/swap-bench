@@ -22,6 +22,10 @@ GET_ROUTES = (static_route.handle, config_route.handle_get, jobs_route.handle_ge
 POST_ROUTES = (upload_route.handle_post, run_route.handle_post,
                jobs_route.handle_post, config_route.handle_post)
 
+# 上传是 base64 JSON：30MB 的原图变成约 40MB 请求体，留一份余量。
+# 超过就直接回 413 并断开，不把几个 G 的请求体往内存里读。
+MAX_BODY = 64 * 1024 * 1024
+
 
 class Handler(BaseHTTPRequestHandler):
     server_version = "SwapBench/0.1"
@@ -82,10 +86,15 @@ class Handler(BaseHTTPRequestHandler):
         """把 POST 的请求体一次读掉并缓存。
 
         keep-alive 下必须读：路由不碰 body 的话，剩下的字节会被当成下一条
-        请求行（服务端报 501 Unsupported method ('{}GET')）。"""
+        请求行（服务端报 501 Unsupported method ('{}GET')）。
+        超过 MAX_BODY 的请求体不读，交给 do_POST 回 413 并断开连接。"""
         if getattr(self, "_body_cache", None) is not None:
             return self._body_cache
         n = int(self.headers.get("Content-Length") or 0)
+        if n > MAX_BODY:
+            self._body_cache = {}
+            self._body_error = n
+            return {}
         raw = self.rfile.read(n) if n else b""
         try:
             self._body_cache = json.loads(raw.decode("utf-8")) if raw else {}
@@ -104,11 +113,19 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         self._body_cache = None
+        self._body_error = 0
         self._dispatch(GET_ROUTES)
 
     def do_POST(self):
         self._body_cache = None
+        self._body_error = 0
         self._read_body()          # 先读掉，防 keep-alive 串包
+        if self._body_error:
+            # 体太大：没读，连接状态已经对不齐了，回完就关
+            self.close_connection = True
+            self._json({"error": f"请求体太大（{self._body_error} 字节）；"
+                                 f"单张图上限 30MB，换个小的再传"}, 413)
+            return
         self._dispatch(POST_ROUTES)
 
 
