@@ -120,5 +120,32 @@ check("选中第 2 次", job.cases[0].get("chosen_attempt") == 2, str(job.cases[
 check("状态 passed", job.cases[0]["state"] == "passed", job.cases[0]["state"])
 check("选中最后一次时不记 pick", not any(r.get("stage") == "pick" for r in recs))
 
+print("6) prep.device 跟着配置走：crop_garment 拿到的是配的那台设备")
+seen = {}
+
+
+def fake_crop(path, out_dir, mode=None, models_dir=None, device="cpu"):
+    seen["device"] = device
+    seen["mode"] = mode
+    return path, {"how": "none"}
+
+
+runner.crop_garment = fake_crop
+backend, judge = FakeBackend(), make_judge([(True, [])])
+runner.make_backend = lambda *a, **k: backend
+runner.make_judge = lambda *a, **k: judge
+tmp = tempfile.mkdtemp()
+config = {
+    "backend": "fake",
+    "prep": {"enabled": True, "mode": "parse", "device": "cuda"},
+    "sampling": {"cfg": 1.0, "steps": 40, "resolution": 1024},
+    "pipeline": {"max_attempts": 2, "escape_attempts": 1, "escape_cfg": 2.0},
+    "paths": {"runs": os.path.join(tmp, "runs"), "outputs": os.path.join(tmp, "out")},
+}
+job = new_job("person.png", [{"name": "g.jpg", "path": "g.jpg"}], BASE, "", config)
+runner.run_job(job, config)
+check("crop_garment 用配置里的 cuda", seen.get("device") == "cuda", str(seen))
+check("裁剪模式还是 parse", seen.get("mode") == "parse", str(seen))
+
 print("\n" + ("全部通过" if not FAILED else f"{len(FAILED)} 项失败"))
 sys.exit(1 if FAILED else 0)

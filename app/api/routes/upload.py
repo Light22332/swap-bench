@@ -52,7 +52,9 @@ def _extract(req):
 
     cfg = state.get_config()
     out_dir = os.path.join(app_config.outputs_dir(cfg), "extract")
-    dst, meta = extract(src, out_dir, app_config.models_dir(cfg))
+    prep_cfg = app_config.section(cfg, "prep")
+    dst, meta = extract(src, out_dir, app_config.models_dir(cfg),
+                        device=prep_cfg["device"])
     if not dst:
         req.json({"error": meta.get("error", "没提取出来"), **meta}, 422)
         return True

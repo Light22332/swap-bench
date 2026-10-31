@@ -355,6 +355,29 @@ README 里那两张图拍的是旧界面：`outputs/page.png` 停在「从照片
 
 ---
 
+## 大图不再整张喂解析、prep 的设备跟配置走（2026-10-31 晚）
+
+**要什么**：审计算过一笔账——手机原图长边 4096，解析模型整张吃进去：先被 processor 缩到 512 推理，再把 128×128 的 logits **双线性放大回 4096** 才 argmax，这一段峰值内存多了 1.35GB；而且 `runner._prepare` 把 `device="cpu"` 写死了，`config.json` 里 `prep.device` 改了不生效。
+
+**怎么做的**：
+
+1. `parse_clothes.analyze()` 先把长边缩到 `ANALYZE_MAX_SIDE = 1024` 再喂 processor；argmax 在 1024 上做（logits 放大到 1024 才几十 MB），要整张掩码时用最近邻放回原图尺寸。框和掩码对外仍按**原图坐标**给，`crop.py` / `extract_garment.py` 不用改。
+2. `runner._prepare(..., device=prep_cfg["device"])`；`/api/extract` 也按 `prep.device` 传。默认仍是 cpu（把显存让给 ComfyUI），想快就改 `cuda`。
+3. 顺手修了「整批下载只导最近一单」：`run.js` 提交成功后清空 `S.cases`，页面只留当前这一批；原来新一批会接在上一批后面排编号，但下载只导当前任务，张数对不上。上一批在「存档」里。
+
+**实测**（4096×4096 的人像，D:\HARNESS\tmp-mem.py 量峰值 RSS）：
+
+- 解析峰值增量：1350.6MB → 466.6MB（2.9×），耗时 2397ms → 676ms；衣服框 `[1221,1447,2912,4096]` → `[1220,1448,2912,4096]`，占比 0.191 → 0.192。
+- 提取（`extract_garment`）：峰值增量 1575.8MB → 487.0MB，产物 1719×2663 → 1720×2662。
+- 裁剪（`crop_garment`）：峰值增量 1646.4MB → 576.3MB，裁出来的框 1px 之差。
+- 端到端：4096 的图上传 → `/api/extract`（6.3s 含首次加载模型）→ 真跑一单 72 秒、首轮 5/5 通过，prep 记录 `box [1187,1396,2945,4096]`。
+- 两批界面验证（Playwright 桩 `/api/run`、`/api/job`）：第一批 2 张 → 再加一件开跑 → 页面只剩 `01` 一张，`#batch` 的 href 从 `?job=jobA` 变成 `?job=jobB`，console 无错。
+- 新增 `tools/tests/test_parse.py`（13 项：假 processor 只该看到 1024、掩码/框回到原图坐标、没衣服时框为 None、换算不越界）；`test_runner.py` 补「crop_garment 拿到配置里的设备」；`check.py` 19/19。
+
+**留下的问题**：掩码分辨率上限 1024，超过的图靠最近邻放回（边缘和原来有 1px 级差异）；`prep.device` 填错不会提前报错，要等 `load()` 失败才退回固定裁剪；解析结果没有按文件缓存，同一张衣服图重跑还会再解析一次。
+
+---
+
 ## 明确不做
 
 - **换脸**：目标是服装迁移，不是把人脸换上去

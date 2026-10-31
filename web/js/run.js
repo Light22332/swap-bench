@@ -32,7 +32,6 @@ async function runPending(pending) {
   syncRun();
   $('rerun').hidden = true;
   $('docket').hidden = true;
-  S.jobStart = S.cases.length;
   hint('开始换，第一张要等模型加载，大概一两分钟…');
   if (!S.cases.length) {
     $('sheet').innerHTML = '<p class="sheet-empty">正在换第一件…</p>';
@@ -46,6 +45,11 @@ async function runPending(pending) {
       garments: pending.map((g) => ({ path: g.path, name: g.name })),
     });
     S.job = data.job_id;
+    // 新的一批：墙上只留这一批的结果。上一批在「存档」里，不然页面上的张数
+    // 会和「整批下载」（只导这一次任务）对不上
+    S.cases = [];
+    S.selected = null;
+    S.jobStart = 0;
     S.pendingPaths = pending.map((g) => g.path);
     S.pollFails = 0;
     if (data.queued) hint(`排上了，前面还有 ${data.queued} 单…`);

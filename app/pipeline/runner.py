@@ -48,7 +48,7 @@ def run_job(job, config):
             continue
         case["state"] = "running"
         ref_path = _prepare(job, case, garment, store, prep_dir, prep_mode,
-                            models_dir, do_prep)
+                            models_dir, do_prep, prep_cfg["device"])
         tried = _run_attempts(job, case, ref_path, store, backend, judge,
                               sampling, max_attempts, total_attempts, escape_cfg)
 
@@ -80,12 +80,15 @@ def run_job(job, config):
     return job
 
 
-def _prepare(job, case, garment, store, prep_dir, prep_mode, models_dir, do_prep):
-    """整理参考图。裁完的路径交给后面每一轮用。"""
+def _prepare(job, case, garment, store, prep_dir, prep_mode, models_dir, do_prep,
+             device="cpu"):
+    """整理参考图。裁完的路径交给后面每一轮用。
+
+    device 跟 prep.device 走：默认 cpu（把显存让给 ComfyUI），想快就改 cuda。"""
     if not do_prep:
         return garment["path"]
     ref_path, meta = crop_garment(garment["path"], prep_dir, mode=prep_mode,
-                                  models_dir=models_dir, device="cpu")
+                                  models_dir=models_dir, device=device)
     if meta:
         case["prep"] = meta
         store.append(job.id, {"stage": "prep", "case": case["index"],
