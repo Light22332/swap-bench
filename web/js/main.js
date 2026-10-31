@@ -9,6 +9,7 @@ import { addGarments, addPerson, isImage, renderChips, wireDrop } from './upload
 import { startRun, stopRun } from './run.js';
 import { initSettings } from './settings.js';
 import { refreshCostTag } from './cost.js';
+import { thumb } from './img.js';
 import { show as showViewer } from './viewer.js';
 
 async function boot() {
@@ -112,7 +113,7 @@ $('demo').addEventListener('click', async () => {
     S.cases = [];
     S.garments = d.garments.map((g) => ({ path: g.path, url: g.url, name: g.name, state: 'pending' }));
     const img = $('preview-person');
-    img.src = S.person.url;
+    img.src = thumb(S.person.url, 800);
     img.hidden = false;
     $('slot-person').querySelector('.slot-empty').hidden = true;
     $('zoom-person').hidden = false;

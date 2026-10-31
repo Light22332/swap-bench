@@ -24,8 +24,15 @@ class Request:
     def json(self, obj, code=200):
         self.handler._json(obj, code)
 
-    def file(self, path, cache="max-age=120", ctype=None):
-        self.handler._file(path, cache, ctype)
+    def file(self, path, cache="max-age=120", ctype=None, etag=None, extra=None):
+        self.handler._file(path, cache, ctype, etag, extra)
 
     def bytes(self, data, ctype, cache="max-age=120", extra=None):
         self.handler._bytes(data, ctype, cache, extra)
+
+    def not_modified(self, etag, cache="max-age=120"):
+        """调用方自己比完 If-None-Match 后调这个：只回 304。"""
+        self.handler._not_modified(etag, cache)
+
+    def if_none_match(self):
+        return self.handler.headers.get("If-None-Match")

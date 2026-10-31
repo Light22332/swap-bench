@@ -1,6 +1,9 @@
 /* 看大图：点缩略图把图放到满屏。Esc、点背景、点右上角都能退出来。
 
-   建一次反复用，不每次点击都往 DOM 里插节点。 */
+   建一次反复用，不每次点击都往 DOM 里插节点。屏幕上的图走 1600 宽的
+   缩略图，保存按钮仍然指向原图。 */
+
+import { thumb } from './img.js';
 
 let box = null;
 let lastFocus = null;
@@ -48,7 +51,7 @@ export function show(url, name) {
   if (!url) return;
   if (!box) build();
   lastFocus = document.activeElement;
-  box.querySelector('.viewer-img').src = url;
+  box.querySelector('.viewer-img').src = thumb(url, 1600);
   box.querySelector('.viewer-cap').textContent = name || '';
   const save = box.querySelector('.viewer-save');
   save.href = url;

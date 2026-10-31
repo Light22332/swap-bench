@@ -52,22 +52,46 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
-    def _file(self, path, cache="max-age=120", ctype=None):
+    def _not_modified(self, etag, cache="max-age=120"):
+        """缓存没过期：只回 304，不重发图片。"""
+        self.send_response(304)
+        self.send_header("ETag", etag)
+        self.send_header("Cache-Control", cache)
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    def _file(self, path, cache="max-age=120", ctype=None, etag=None, extra=None):
         if not path or not os.path.isfile(path):
             self._json({"error": "not found", "path": path}, 404)
             return
+        if etag and self.headers.get("If-None-Match") == etag:
+            self._not_modified(etag, cache)
+            return
         ctype = ctype or mimetypes.guess_type(path)[0] or "application/octet-stream"
+        headers = dict(extra or {})
+        if etag:
+            headers["ETag"] = etag
         with open(path, "rb") as f:
-            self._bytes(f.read(), ctype, cache)
+            self._bytes(f.read(), ctype, cache, headers)
 
     def _body(self):
+        """请求体解析成 dict；空体或坏 JSON 一律返回 {}（和以前一致）。"""
+        return self._read_body()
+
+    def _read_body(self):
+        """把 POST 的请求体一次读掉并缓存。
+
+        keep-alive 下必须读：路由不碰 body 的话，剩下的字节会被当成下一条
+        请求行（服务端报 501 Unsupported method ('{}GET')）。"""
+        if getattr(self, "_body_cache", None) is not None:
+            return self._body_cache
         n = int(self.headers.get("Content-Length") or 0)
-        if not n:
-            return {}
+        raw = self.rfile.read(n) if n else b""
         try:
-            return json.loads(self.rfile.read(n).decode("utf-8"))
+            self._body_cache = json.loads(raw.decode("utf-8")) if raw else {}
         except (json.JSONDecodeError, UnicodeDecodeError):
-            return {}
+            self._body_cache = {}
+        return self._body_cache
 
     # ---------- 分发 ----------
 
@@ -79,9 +103,12 @@ class Handler(BaseHTTPRequestHandler):
         req.json({"error": "not found"}, 404)
 
     def do_GET(self):
+        self._body_cache = None
         self._dispatch(GET_ROUTES)
 
     def do_POST(self):
+        self._body_cache = None
+        self._read_body()          # 先读掉，防 keep-alive 串包
         self._dispatch(POST_ROUTES)
 
 

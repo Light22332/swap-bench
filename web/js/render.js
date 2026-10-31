@@ -1,6 +1,12 @@
 /* 渲染：把状态画到页面上。这个模块不发起请求，也不改状态（点击回调除外）。 */
 
 import { $, S, lastStage } from './state.js';
+import { srcset, thumb } from './img.js';
+
+// 格子在 1440 宽屏上大约 390px，手机上占一列；给浏览器一份尺寸提示，
+// 它才会挑 400/800/1200 里合适的那张，不至于把 3.6MB 原图拉下来
+const CELL_SIZES = '(max-width: 640px) 92vw, (max-width: 1100px) 46vw, 28vw';
+const CELL_WIDTHS = [400, 800, 1200];
 
 export const STAMP = {
   pending: ['等待', 'is-live'],
@@ -83,16 +89,18 @@ function renderSheet() {
     const frame = document.createElement('span');
     frame.className = 'cell-frame';
 
-    let thumb = null;
+    let imgEl = null;
     if (gen && gen.image_url) {
       const img = document.createElement('img');
       img.className = 'cell-img';
-      img.src = gen.image_url;
       img.alt = `第 ${c.index} 件的换装结果`;
-      img.width = 768;
-      img.height = 1344;
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.sizes = CELL_SIZES;
+      img.srcset = srcset(gen.image_url, CELL_WIDTHS);
+      img.src = thumb(gen.image_url, 800);
       frame.append(img);
-      thumb = img;
+      imgEl = img;
     } else {
       const v = document.createElement('span');
       v.className = 'cell-void';
@@ -120,8 +128,8 @@ function renderSheet() {
 
     cell.append(frame, cap);
 
-    if (thumb && S.personUrl) {
-      holdToCompare(cell, thumb);
+    if (imgEl && S.personUrl) {
+      holdToCompare(cell, imgEl);
       cell.title = '点开看检验单；按住看原片';
       cell.setAttribute('aria-label', cell.getAttribute('aria-label') + '，空格键切换原片');
     }
@@ -237,23 +245,34 @@ function holdToCompare(cell, img) {
   if (!img) return;
   let timer = null;
   let showing = false;
-  let saved = '';
+  let saved = null;        // [src, srcset]：srcset 也要存，不然换回来只剩一张小图
+
+  const swapIn = () => {
+    saved = [img.src, img.srcset];
+    img.removeAttribute('srcset');
+    img.removeAttribute('sizes');
+    img.src = thumb(S.personUrl, 1200);
+    cell.classList.add('tip-original');
+    showing = true;
+  };
+
+  const swapOut = () => {
+    if (!showing) return;
+    img.src = saved ? saved[0] : '';
+    if (saved && saved[1]) img.srcset = saved[1];
+    img.sizes = CELL_SIZES;
+    cell.classList.remove('tip-original');
+    showing = false;
+    saved = null;
+  };
 
   const show = () => {
-    timer = setTimeout(() => {
-      saved = img.src;
-      img.src = S.personUrl;
-      cell.classList.add('tip-original');
-      showing = true;
-    }, 120);
+    timer = setTimeout(swapIn, 120);
   };
 
   const hide = () => {
     clearTimeout(timer);
-    if (!showing) return;
-    img.src = saved;
-    cell.classList.remove('tip-original');
-    showing = false;
+    swapOut();
   };
 
   cell.addEventListener('pointerdown', show);
@@ -265,14 +284,9 @@ function holdToCompare(cell, img) {
   cell.addEventListener('keydown', (ev) => {
     if (ev.key !== ' ' && ev.key !== 'Spacebar') return;
     ev.preventDefault();
-    if (showing) {
-      hide();
-    } else {
-      saved = img.src;
-      img.src = S.personUrl;
-      cell.classList.add('tip-original');
-      showing = true;
-    }
+    clearTimeout(timer);
+    if (showing) swapOut();
+    else swapIn();
   });
   cell.addEventListener('blur', hide);
 }

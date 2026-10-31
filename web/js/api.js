@@ -1,4 +1,10 @@
-/* 所有网络请求收在这里。页面代码不直接写 fetch，出错处理也就只有一处。 */
+/* 所有网络请求收在这里。页面代码不直接写 fetch，出错处理也就只有一处。
+
+每个请求都带超时：服务真卡住时，页面要能说"等了 8 秒没回应"，
+而不是永远转圈。 */
+
+const TIMEOUT = 8000;
+const UPLOAD_TIMEOUT = 30000;      // 30MB 的图传上去比普通请求慢
 
 async function json(res) {
   const body = await res.json().catch(() => ({}));
@@ -6,60 +12,67 @@ async function json(res) {
   return body;
 }
 
+/** fetch + 超时 + JSON。超时报的是人话，不把 AbortError 丢给页面。 */
+async function call(url, opts = {}, timeout = TIMEOUT) {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), timeout);
+  try {
+    const res = await fetch(url, { ...opts, signal: ctl.signal });
+    return await json(res);
+  } catch (e) {
+    if (e.name === 'AbortError') {
+      throw new Error(`等了 ${Math.round(timeout / 1000)} 秒没回应`);
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+const post = (url, body, timeout) => call(url, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(body),
+}, timeout);
+
 export function getConfig() {
-  return fetch('/api/config').then(json);
+  return call('/api/config');
 }
 
 export function getSettings() {
-  return fetch('/api/settings').then(json);
+  return call('/api/settings');
 }
 
 export function saveSettings(payload) {
-  return fetch('/api/settings', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  }).then(json);
+  return post('/api/settings', payload);
 }
 
 export function extractGarment(path) {
-  return fetch('/api/extract', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ path }),
-  }).then(json);
+  return post('/api/extract', { path }, 60000);   // 模型推理要几十秒
 }
 
 export function getJob(id) {
-  return fetch('/api/job/' + id).then(json);
+  return call('/api/job/' + id);
 }
 
 export function getHistory() {
-  return fetch('/api/history').then(json);
+  return call('/api/history');
 }
 
 export function getMetrics() {
-  return fetch('/api/metrics').then(json);
+  return call('/api/metrics');
 }
 
 export function loadSamples() {
-  return fetch('/api/samples', { method: 'POST' }).then(json);
+  return post('/api/samples', {});
 }
 
 export function submitRun(payload) {
-  return fetch('/api/run', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  }).then(json);
+  return post('/api/run', payload);
 }
 
 export function cancelJob(id) {
-  return fetch('/api/cancel', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ job_id: id }),
-  }).then(json);
+  return post('/api/cancel', { job_id: id });
 }
 
 function toDataURL(file) {
@@ -73,9 +86,5 @@ function toDataURL(file) {
 
 export async function uploadFile(file) {
   const data = await toDataURL(file);
-  return fetch('/api/upload', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: file.name, data }),
-  }).then(json);
+  return post('/api/upload', { name: file.name, data }, UPLOAD_TIMEOUT);
 }

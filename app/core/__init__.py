@@ -5,7 +5,8 @@
   paths   项目内路径的唯一定义处
   photos  读图（EXIF 转正）与上传归一化
   store   JSONL 证据层
+  thumbs  显示用的缩略图（按原图 + 宽度缓存）
 """
-from . import checks, config, paths, photos, store
+from . import checks, config, paths, photos, store, thumbs
 
-__all__ = ["checks", "config", "paths", "photos", "store"]
+__all__ = ["checks", "config", "paths", "photos", "store", "thumbs"]

@@ -4,6 +4,7 @@
 import { uploadFile } from './api.js';
 import { $, S } from './state.js';
 import { hint, render, syncRun } from './render.js';
+import { thumb } from './img.js';
 import { show as showViewer } from './viewer.js';
 
 // HEIC 在有些浏览器里 type 是空的（或 image/heic），按扩展名兜一下：
@@ -28,7 +29,7 @@ export async function addPerson(file) {
     const up = await uploadFile(file);
     S.person = { path: up.path, url: up.url, name: file.name };
     const img = $('preview-person');
-    img.src = up.url;
+    img.src = thumb(up.url, 800);
     img.hidden = false;
     $('slot-person').querySelector('.slot-empty').hidden = true;
     $('zoom-person').hidden = false;
@@ -76,7 +77,7 @@ export function renderChips() {
 
     const im = document.createElement('img');
     im.className = 'chip-thumb';
-    im.src = g.url;
+    im.src = thumb(g.url, 96);
     im.alt = '';
     im.width = 26;
     im.height = 34;
@@ -120,11 +121,17 @@ export function wireDrop(el, handler) {
   if (!el) return;
   el.addEventListener('dragover', (e) => {
     e.preventDefault();
+    // 槽和 body 都绑了 drop：不在槽这一层截住，一次拖放会被处理两遍
+    e.stopPropagation();
     el.classList.add('is-over');
   });
-  el.addEventListener('dragleave', () => el.classList.remove('is-over'));
+  el.addEventListener('dragleave', (e) => {
+    e.stopPropagation();
+    el.classList.remove('is-over');
+  });
   el.addEventListener('drop', (e) => {
     e.preventDefault();
+    e.stopPropagation();
     el.classList.remove('is-over');
     const files = [...(e.dataTransfer ? e.dataTransfer.files : [])].filter(isImage);
     if (files.length) handler(files);
