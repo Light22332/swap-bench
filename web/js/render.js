@@ -308,12 +308,13 @@ function holdToCompare(cell, img) {
   cell.addEventListener('blur', hide);
 }
 
-/** 整批下载：有图才出现，指向当前这次任务。 */
+/** 整批下载：这一批跑完才出现，指向当前这次任务。 */
 function syncBatch() {
   const a = $('batch');
   const has = S.cases.some((c) => c.final_image || c.final_url);
-  a.hidden = !(has && S.job);
-  if (has && S.job) a.href = '/api/export?job=' + S.job;
+  // 还在跑的时候先别给下载：zip 里只会有一部分图，点进去容易以为缺了
+  a.hidden = !(has && S.job && !S.running);
+  if (!a.hidden) a.href = '/api/export?job=' + S.job;
 }
 
 /** 存档列表：一行一次，日期在最左。 */

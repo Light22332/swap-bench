@@ -1,8 +1,8 @@
 # 模型文件
 
-这些文件都不进版本库（一共约 157MB）。跑之前下载到这里：
+这些文件都不进版本库（一共约 149MB）。跑之前下载到这里：
 
-## 人脸 + 手部（OpenCV Zoo，四个 onnx，约 47MB）
+## 人脸 + 手部（OpenCV Zoo，四个 onnx，约 44.7MB）
 
 ```bash
 curl -L -o models/face_detection_yunet.onnx \
@@ -30,7 +30,7 @@ Invoke-WebRequest -Uri "https://github.com/opencv/opencv_zoo/raw/main/models/han
 后两个是 MediaPipe 的手部模型，官方只有 Python 包，这里是 OpenCV 转换好的 ONNX 版本，
 直接用 `cv2.dnn` 跑，不用装 100MB 的 mediapipe（它会连带升级 numpy/protobuf，容易把 ComfyUI 环境搞坏）。
 
-## 人像解析（SegFormer-B2，约 110MB）
+## 人像解析（SegFormer-B2，约 104MB）
 
 参考图裁剪要用它认"人身上的衣服在哪"。
 
@@ -63,7 +63,7 @@ SegFormer-B2 在 ATR 人像解析集上微调，基座是 NVlabs/SegFormer，**�
 
 ## 生成要用的权重（本仓库不带，得自己准备）
 
-上面那 157MB 是**质检和裁剪**用的。真正出图的模型在 ComfyUI 那一侧，仓库里没有，
+上面那 149MB 是**质检和裁剪**用的。真正出图的模型在 ComfyUI 那一侧，仓库里没有，
 也不打算带：GB 级别，而且各有各的许可。四个文件名要和 `config.json` 的 `models` 段对上：
 
 | `config.json` 里的键 | 文件 | 放哪 |
@@ -75,8 +75,9 @@ SegFormer-B2 在 ATR 人像解析集上微调，基座是 NVlabs/SegFormer，**�
 
 换成别的模型或改了文件名，只改 `config.json` 里这四行，代码一行都不用动。
 
-显存：这套组合实测用到 15GB，所以开跑前会看一眼显卡，低于 `config.json` 的
-`comfyui.min_vram_gb`（默认 12）就拦下来，不让它跑到一半 OOM。填 `0` 关掉这项检查。
+显存：这套组合实测用到 15GB，所以开跑前会看一眼显卡。阈值写在 `config.json` 的
+`comfyui.min_vram_gb`（不写就按默认 12，默认值见 `app/core/config.py`），低于它就拦下来，
+不让它跑到一半 OOM。填 `0` 关掉这项检查。
 
 ## 缺文件时会怎样
 
@@ -85,4 +86,4 @@ SegFormer-B2 在 ATR 人像解析集上微调，基座是 NVlabs/SegFormer，**�
 - 缺人脸模型 → 「脸没变」「没有多余的人」两项返回 null
 - 缺手部模型 → 「手还在」返回 null
 - 缺人像解析模型 → 参考图退回按固定比例裁剪（`config.json` 里 `prep.mode` 设成 `fixed` 也是同样效果）
-- 页面顶部会标出当前能自动检查几项
+- 检验单里会写「本地质检：N/5 项可自动判定」，缺的模型对应那几项自动跳过

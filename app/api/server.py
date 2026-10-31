@@ -32,6 +32,7 @@ MAX_BODY = 64 * 1024 * 1024
 
 class Handler(BaseHTTPRequestHandler):
     server_version = "SwapBench/0.1"
+    sys_version = ""                      # 别把 Python 版本写进 Server 头
     protocol_version = "HTTP/1.1"
 
     def log_message(self, fmt, *args):
@@ -90,10 +91,21 @@ class Handler(BaseHTTPRequestHandler):
 
         keep-alive 下必须读：路由不碰 body 的话，剩下的字节会被当成下一条
         请求行（服务端报 501 Unsupported method ('{}GET')）。
-        超过 MAX_BODY 的请求体不读，交给 do_POST 回 413 并断开连接。"""
+        超过 MAX_BODY 的请求体不读，交给 do_POST 回 413 并断开连接；
+        Content-Length 不是数字或负数时也不读，回 400 并断开。"""
         if getattr(self, "_body_cache", None) is not None:
             return self._body_cache
-        n = int(self.headers.get("Content-Length") or 0)
+        raw_len = self.headers.get("Content-Length")
+        try:
+            n = int(raw_len or 0)
+        except (TypeError, ValueError):
+            self._body_cache = {}
+            self._body_invalid = f"Content-Length 不是数字：{raw_len!r}"
+            return {}
+        if n < 0:
+            self._body_cache = {}
+            self._body_invalid = f"Content-Length 是负数：{n}"
+            return {}
         if n > MAX_BODY:
             self._body_cache = {}
             self._body_error = n
@@ -103,6 +115,7 @@ class Handler(BaseHTTPRequestHandler):
             self._body_cache = json.loads(raw.decode("utf-8")) if raw else {}
         except (json.JSONDecodeError, UnicodeDecodeError):
             self._body_cache = {}
+            self._body_json_bad = bool(raw)
         return self._body_cache
 
     # ---------- 分发 ----------
@@ -113,7 +126,7 @@ class Handler(BaseHTTPRequestHandler):
             for route in routes:
                 if route(req):
                     return
-        except (BrokenPipeError, ConnectionResetError):
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
             raise                       # 浏览器提前断开，不是服务端的问题
         except Exception:
             logger.exception("处理 %s %s 时出错", self.command, self.path)
@@ -127,18 +140,31 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         self._body_cache = None
         self._body_error = 0
+        self._body_invalid = ""
+        self._body_json_bad = False
         self._dispatch(GET_ROUTES)
 
     def do_POST(self):
         self._body_cache = None
         self._body_error = 0
+        self._body_invalid = ""
+        self._body_json_bad = False
         self._read_body()          # 先读掉，防 keep-alive 串包
+        if self._body_invalid:
+            # 请求头本身就坏了，连接状态对不齐，回完就关
+            self.close_connection = True
+            logger.warning("拒收请求：%s", self._body_invalid)
+            self._json({"error": "请求头里的 Content-Length 不对，读不了请求体"}, 400)
+            return
         if self._body_error:
             # 体太大：没读，连接状态已经对不齐了，回完就关
             self.close_connection = True
             logger.warning("请求体太大，拒收：%s 字节", self._body_error)
             self._json({"error": f"请求体太大（{self._body_error} 字节）；"
                                  f"单张图上限 30MB，换个小的再传"}, 413)
+            return
+        if self._body_json_bad:
+            self._json({"error": "请求体不是 JSON"}, 400)
             return
         self._dispatch(POST_ROUTES)
 

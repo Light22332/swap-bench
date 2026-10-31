@@ -56,14 +56,48 @@ def handle_post(req):
         return _save_settings(req)
     if req.path != "/api/config":
         return False
-    state.update_config(req.body())
+    data = req.body()
+    if not isinstance(data, dict):
+        req.json({"error": "请求体要是一个 JSON 对象"}, 400)
+        return True
+    bad = _validate_patch(data)
+    if bad:
+        req.json({"error": bad}, 400)
+        return True
+    state.update_config(data)
     req.json({"ok": True})
     return True
 
 
+def _validate_patch(data):
+    """POST /api/config 只收这几个字段，先把类型看住，别把内存里的配置写坏。"""
+    backend = data.get("backend")
+    if backend is not None and backend not in ("comfyui", "cloud"):
+        return "backend 只能是 comfyui 或 cloud"
+    for key in ("instruction", "negative"):
+        if key in data and not isinstance(data[key], str):
+            return f"{key} 要是字符串"
+    judge = data.get("judge")
+    if judge is not None:
+        if not isinstance(judge, dict):
+            return "judge 要是一个对象"
+        if judge.get("mode") is not None and not isinstance(judge["mode"], str):
+            return "judge.mode 要是字符串"
+    return ""
+
+
 def _save_settings(req):
     """改地址这类设置：写进 config.json，立刻生效，不用重启。"""
-    data = dict(req.body() or {})
+    raw = req.body()
+    if not isinstance(raw, dict):
+        req.json({"error": "请求体要是一个 JSON 对象"}, 400)
+        return True
+    data = dict(raw)
+    for key in ("cloud.api_key", "cloud.base_url"):
+        value = data.get(key)
+        if value is not None and not isinstance(value, str):
+            req.json({"error": f"{key} 要是字符串"}, 400)
+            return True
     # 页面拿不到已存的密钥，所以留空一律当"不改"，免得一次保存把密钥抹掉
     if not (data.get("cloud.api_key") or "").strip():
         data.pop("cloud.api_key", None)

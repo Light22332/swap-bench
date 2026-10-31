@@ -18,9 +18,12 @@ def handle_post(req):
 
     data = req.body()
     person = data.get("person")
-    garments = data.get("garments") or []
-    if not person or not garments:
-        req.json({"error": "需要 1 张人像和至少 1 张服装图"}, 400)
+    garments = data.get("garments")
+    if not isinstance(person, str) or not person.strip():
+        req.json({"error": "person 要是图片路径（字符串）"}, 400)
+        return True
+    if not isinstance(garments, list) or not garments:
+        req.json({"error": "garments 要是至少 1 项的数组"}, 400)
         return True
 
     person_full = paths.inside(person)
@@ -31,19 +34,29 @@ def handle_post(req):
     glist = []
     for g in garments:
         gp = g.get("path") if isinstance(g, dict) else g
+        if not isinstance(gp, str) or not gp.strip():
+            req.json({"error": "garments 里每项要是图片路径（字符串，或 {\"path\": ...}）"}, 400)
+            return True
         full = paths.inside(gp)
         if not full or not os.path.isfile(full):
             req.json({"error": f"找不到服装图：{gp}"}, 400)
             return True
         # 前端传了原始文件名就用它，否则退回磁盘名（带时间戳前缀，不好看）
         label = (g.get("name") if isinstance(g, dict) else None) or os.path.basename(gp)
-        glist.append({"name": label, "path": full})
+        glist.append({"name": str(label), "path": full})
 
     cfg = state.config_snapshot()
-    if data.get("backend"):
-        cfg["backend"] = data["backend"]
+    backend = data.get("backend")
+    if backend is not None:
+        if backend not in ("comfyui", "cloud"):
+            req.json({"error": "backend 只能是 comfyui 或 cloud"}, 400)
+            return True
+        cfg["backend"] = backend
     instruction = data.get("instruction") or app_config.instruction(cfg)
     negative = data.get("negative") or app_config.negative(cfg)
+    if not isinstance(instruction, str) or not isinstance(negative, str):
+        req.json({"error": "instruction / negative 要是字符串"}, 400)
+        return True
 
     if app_config.backend(cfg) == "comfyui":
         bad = _preflight(cfg)

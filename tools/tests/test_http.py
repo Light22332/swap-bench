@@ -7,6 +7,7 @@
 跑法：python tools/tests/test_http.py
 """
 import http.client
+import json
 import os
 import sys
 import threading
@@ -86,6 +87,68 @@ try:
         conn.close()
     finally:
         api_server.MAX_BODY = old
+
+    def post(path, payload=None, raw=None):
+        body = raw if raw is not None else json.dumps(payload)
+        conn = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
+        conn.request("POST", path, body=body.encode("utf-8"),
+                     headers={"Content-Type": "application/json"})
+        resp = conn.getresponse()
+        data = resp.read()
+        conn.close()
+        return resp, data
+
+    print("畸形 Content-Length：非数字/负数都回 400，不挂死不吞请求")
+    for bad_len in ("abc", "-1"):
+        conn = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
+        conn.putrequest("POST", "/api/upload")
+        conn.putheader("Content-Type", "application/json")
+        conn.putheader("Content-Length", bad_len)   # 只发头
+        conn.endheaders()
+        r = conn.getresponse()
+        body = r.read().decode("utf-8", "replace")
+        conn.close()
+        check(f"Content-Length={bad_len} 回 400", r.status == 400, str(r.status))
+        check(f"Content-Length={bad_len} 说清楚是哪的问题",
+              "Content-Length" in body, body[:100])
+
+    print("请求体不是 JSON：统一回 400，不再当成空对象放过去")
+    for path in ("/api/upload", "/api/settings", "/api/config", "/api/run"):
+        r, body = post(path, raw="{这不是 JSON")
+        text = body.decode("utf-8", "replace")
+        check(f"{path} 非 JSON 回 400", r.status == 400, str(r.status))
+        check(f"{path} 提示「不是 JSON」", "不是 JSON" in text, text[:100])
+
+    print("参数类型不对：400 而不是 500")
+    r, body = post("/api/upload", {"name": "a.jpg"})
+    check("缺 data 回 400 且说清楚字段名",
+          r.status == 400 and "data 字段" in body.decode(), body[:120])
+    r, body = post("/api/upload", {"name": "a.jpg", "data": "!!!!!!"})
+    check("坏 base64 回 400",
+          r.status == 400 and "base64" in body.decode(), body[:120])
+    r, body = post("/api/run", {"person": [], "garments": []})
+    check("run 的 person 传数组回 400",
+          r.status == 400 and "person" in body.decode(), body[:120])
+    r, body = post("/api/cancel", {"job_id": {"a": 1}})
+    check("cancel 的 job_id 传对象回 400",
+          r.status == 400 and "job_id" in body.decode(), body[:120])
+    r, body = post("/api/config", {"backend": 123})
+    check("config 的 backend 传数字回 400",
+          r.status == 400 and "backend" in body.decode(), body[:120])
+    r, body = post("/api/config", [1, 2])
+    check("config 传数组回 400",
+          r.status == 400 and "JSON 对象" in body.decode(), body[:120])
+
+    print("404 说人话、响应头不泄露运行时版本")
+    conn = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
+    conn.request("GET", "/api/job/nope")
+    r = conn.getresponse()
+    body = r.read().decode("utf-8", "replace")
+    server = r.getheader("Server") or ""
+    conn.close()
+    check("/api/job 不存在回 404", r.status == 404, str(r.status))
+    check("404 是中文提示", "没有这个任务" in body, body[:100])
+    check("Server 头不带 Python 版本", "Python" not in server, server)
 finally:
     srv.shutdown()
     srv.server_close()

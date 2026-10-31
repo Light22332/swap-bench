@@ -21,7 +21,7 @@ def handle_get(req):
         if replay:
             req.json(view.decorate(replay))
             return True
-        req.json({"error": "no such job"}, 404)
+        req.json({"error": "没有这个任务（可能已经被清掉了）"}, 404)
         return True
 
     if p == "/api/jobs":
@@ -49,8 +49,11 @@ def handle_post(req):
         return False
     data = req.body()
     jid = data.get("job_id") or data.get("job")
-    if not jid:
+    if jid is None or jid == "":
         req.json({"error": "要给一个 job_id"}, 400)
+        return True
+    if not isinstance(jid, str):
+        req.json({"error": "job_id 要是字符串"}, 400)
         return True
     how = state.cancel_job(jid)
     if not how:
@@ -71,7 +74,7 @@ def _export(req):
     job = state.get_job(jid)
     data = view.decorate(job.to_dict()) if job else history.load_job(jid)
     if not data:
-        req.json({"error": "no such job"}, 404)
+        req.json({"error": "没有这个任务（可能已经被清掉了）"}, 404)
         return True
 
     packed, blob = history.export_zip(data)

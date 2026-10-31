@@ -45,7 +45,11 @@ def handle_post(req):
 def _extract(req):
     """从一张人物照片里把衣服抠出来，产物落在 outputs/extract/。"""
     data = req.body() or {}
-    src = paths.inside(data.get("path") or "")
+    path = data.get("path")
+    if not isinstance(path, str) or not path.strip():
+        req.json({"error": "path 要是图片路径（字符串）"}, 400)
+        return True
+    src = paths.inside(path)
     if not src or not os.path.isfile(src):
         req.json({"error": "找不到要提取的那张照片"}, 400)
         return True
@@ -68,8 +72,17 @@ def _extract(req):
 
 def _upload(req):
     data = req.body()
-    name = data.get("name") or "upload.jpg"
-    raw = data.get("data") or ""
+    name = data.get("name")
+    if name is None:
+        name = "upload.jpg"
+    elif not isinstance(name, str):
+        req.json({"error": "name 要是字符串（文件名）"}, 400)
+        return True
+    raw = data.get("data")
+    if not isinstance(raw, str) or not raw.strip():
+        req.json({"error": "没收到图片数据：JSON 里要有个 data 字段"
+                            "（base64，或 data:image/...;base64,...）"}, 400)
+        return True
     if raw.strip().startswith("data:") and "," in raw:
         raw = raw.split(",", 1)[1]
     try:
@@ -78,7 +91,7 @@ def _upload(req):
         req.json({"error": "base64 解码失败"}, 400)
         return True
     if not blob:
-        req.json({"error": "这个文件是空的"}, 400)
+        req.json({"error": "base64 内容无效（解码出来是空的）"}, 400)
         return True
     if len(blob) > MAX_BYTES:
         req.json({"error": "文件太大（上限 30MB）"}, 413)

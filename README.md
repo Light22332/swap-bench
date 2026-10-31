@@ -2,14 +2,15 @@
 
 [![check](https://github.com/Light22332/swap-bench/actions/workflows/check.yml/badge.svg)](https://github.com/Light22332/swap-bench/actions/workflows/check.yml)
 
-给一张人像和一件衣服，把衣服换到人身上；换完之后**自己验收**，不合格的自动返工，最后从所有尝试里挑最好的那张。全部跑在本地。
+给一张人像和一件衣服，把衣服换到人身上；换完之后**自己验收**，不合格的自动返工，最后从所有尝试里挑最好的那张。默认全部跑在本地，也可以切云端。
 
 > **Swap Bench** is a local garment-swap pipeline that checks its own output.
 > You drop one person photo and one garment photo; it generates the swap with Qwen-Image 2.1
 > in ComfyUI, then verifies the result with face recognition (YuNet + SFace), hand detection
 > (MediaPipe palm detector + 21 landmarks, run through OpenCV DNN) and structural checks,
 > retries only when the person, the clothing or the hands are wrong, and keeps the best attempt.
-> Runs on a 16 GB laptop GPU, ~55 s per image, no cloud API.
+> Runs on a 16 GB laptop GPU, ~55 s per image, by default no cloud API (an optional
+> cloud backend is supported and has been verified with a real key).
 
 **核心不是"能生成"，是"怎么知道自己出的图行不行"。**
 
@@ -412,7 +413,7 @@ app/
     generate/
       graph.py        把一次请求翻译成 ComfyUI API 图（手写，不用 UI 导出的 JSON）
       comfyui.py      本地后端：提交、轮询、取图、失败分类
-      cloud.py        云端后端：OpenAI images/edits 形态（未用真实 key 验证）
+      cloud.py        云端后端：OpenAI images/edits 形态（百炼已用真 key 跑通；OpenAI 那条只用假服务器验过）
     judge/
       faces.py        人脸检测与特征比对（YuNet + SFace）
       hands.py        手掌检测 + 21 点关键点（MediaPipe 模型，走 OpenCV DNN）
@@ -431,7 +432,7 @@ app/
     history.py        从 JSONL 还原、存档列表、打包导出
 electron/
   main.js             桌面外壳：起服务 → 开窗口 → 退出收尾
-web/                  index.html + css/ 六个文件 + js/ 六个原生 ES 模块，无框架、无构建
+web/                  index.html + css/ 八个文件 + js/ 十个原生 ES 模块，无框架、无构建
 models/               人脸两个 onnx + 手部两个 onnx + segformer_b2_clothes/（都不进版本库）
 samples/              八张示例图，随仓库分发（本地模型生成）
 bench/                回归用的八组固定输入（不进版本库，见 bench/README.md）
