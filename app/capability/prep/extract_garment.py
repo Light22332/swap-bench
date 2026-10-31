@@ -16,6 +16,7 @@ import time
 import numpy as np
 from PIL import Image, ImageFilter
 
+from ...core import photos
 from . import parse_clothes
 
 MIN_SHARE = 0.05        # 衣服像素少于这个占比就当作"没认出衣服"
@@ -38,7 +39,7 @@ def extract(photo_path, out_dir, models_dir, device="cpu"):
             "labels": info.get("labels") or {},
         }
 
-    im = Image.open(photo_path).convert("RGB")
+    im = photos.open_upright(photo_path).convert("RGB")
     if (im.width, im.height) != (mask.shape[1], mask.shape[0]):
         im = im.resize((mask.shape[1], mask.shape[0]), Image.LANCZOS)
 

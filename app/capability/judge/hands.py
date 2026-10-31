@@ -22,6 +22,8 @@ import cv2
 import numpy as np
 from PIL import Image
 
+from ...core import photos
+
 PALM_FILE = "palm_detection_mediapipe_2023feb.onnx"
 POSE_FILE = "handpose_estimation_mediapipe_2023feb.onnx"
 
@@ -43,7 +45,7 @@ def _ascii_copy(path):
 
 
 def _to_bgr(path, max_side=1280):
-    im = Image.open(path)
+    im = photos.open_upright(path)
     if im.mode in ("RGBA", "LA", "P"):
         im = im.convert("RGBA")
         bg = Image.new("RGBA", im.size, (255, 255, 255, 255))

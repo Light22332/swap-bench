@@ -6,7 +6,18 @@ import { $, S } from './state.js';
 import { hint, render, syncRun } from './render.js';
 import { show as showViewer } from './viewer.js';
 
-export const isImage = (f) => f && f.type && f.type.startsWith('image/');
+// HEIC 在有些浏览器里 type 是空的（或 image/heic），按扩展名兜一下：
+// 它也是图片，让上传接口去判断，报错时才有「先导出成 JPG」这句人话。
+const HEIC_EXT = /\.(heic|heif|hif)$/i;
+
+export const isImage = (f) =>
+  !!f && ((f.type && f.type.startsWith('image/')) || HEIC_EXT.test(f.name || ''));
+
+// 服务端把照片转正 / 转格式 / 缩小时会带一句 note，说一声，不然用户
+// 会以为照片被动了手脚。放在 syncRun 之后调用，因为它会改写提示语。
+function sayNote(note) {
+  if (note) hint(note);
+}
 
 export async function addPerson(file) {
   if (!isImage(file)) {
@@ -26,6 +37,7 @@ export async function addPerson(file) {
     S.garments.forEach((g) => { g.state = 'pending'; });
     renderChips();
     syncRun();
+    sayNote(up.note);
   } catch (e) {
     hint('人像没传上去：' + e.message, true);
   }
@@ -37,16 +49,22 @@ export async function addGarments(files) {
     hint('这些文件不是图片，换几张试试。', true);
     return;
   }
+  const notes = new Set();
+  const errors = [];
   for (const f of list) {
     try {
       const up = await uploadFile(f);
       S.garments.push({ path: up.path, url: up.url, name: f.name, state: 'pending' });
+      if (up.note) notes.add(up.note);
     } catch (e) {
-      hint('衣服没传上去：' + e.message, true);
+      errors.push(f.name + '：' + e.message);
     }
   }
   renderChips();
   syncRun();
+  // 一次传好几张时，失败的要说全，别被 syncRun 的提示语盖掉
+  if (errors.length) hint('衣服没传上去：' + errors.join('；'), true);
+  else sayNote([...notes].join('；'));
 }
 
 export function renderChips() {

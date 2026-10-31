@@ -18,6 +18,7 @@ import time
 from PIL import Image, ImageChops, ImageStat
 
 from . import faces, hands
+from ...core import photos
 from ...core.checks import CHECKS, blank_verdict, summarize
 
 GRID = 16
@@ -30,7 +31,7 @@ FACE_SIM_MIN = 0.45        # 人脸相似度下限（实测：对 0.75+，错 0.
 
 
 def _prep(path):
-    im = Image.open(path)
+    im = photos.open_upright(path)
     ratio = im.width / im.height
     if im.mode in ("RGBA", "LA", "P"):
         im = im.convert("RGBA")

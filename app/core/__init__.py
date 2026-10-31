@@ -3,8 +3,9 @@
   checks  五项检查的定义、加权、失败项翻成约束
   config  config.json 的读取与默认值（缺键时的默认值只在这里）
   paths   项目内路径的唯一定义处
+  photos  读图（EXIF 转正）与上传归一化
   store   JSONL 证据层
 """
-from . import checks, config, paths, store
+from . import checks, config, paths, photos, store
 
-__all__ = ["checks", "config", "paths", "store"]
+__all__ = ["checks", "config", "paths", "photos", "store"]

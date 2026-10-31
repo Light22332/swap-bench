@@ -24,6 +24,7 @@ import os
 
 from PIL import Image
 
+from ...core import photos
 from . import parse_clothes
 
 # 第 1 档（固定比例）的参数：左右各去 8%，上去 16%，下去 10%
@@ -90,7 +91,7 @@ def crop_garment(path, out_dir, mode="parse", models_dir=None, device="cpu"):
     解析跑起来时带 share、cut（固定框会切掉的衣服占比）、parse_ms。
     """
     try:
-        im = Image.open(path)
+        im = photos.open_upright(path)
     except Exception as e:
         return path, {"how": "none", "reason": f"打不开：{e}"}
     w, h = im.size

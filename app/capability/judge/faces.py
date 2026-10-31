@@ -19,6 +19,8 @@ import cv2
 import numpy as np
 from PIL import Image
 
+from ...core import photos
+
 DET_FILE = "face_detection_yunet.onnx"
 REC_FILE = "face_recognition_sface.onnx"
 
@@ -37,7 +39,7 @@ def _ascii_copy(path):
 
 
 def _to_bgr(path, max_side=960):
-    im = Image.open(path)
+    im = photos.open_upright(path)
     if im.mode in ("RGBA", "LA", "P"):
         im = im.convert("RGBA")
         bg = Image.new("RGBA", im.size, (255, 255, 255, 255))

@@ -37,7 +37,7 @@
     <ol class="flow">
       <li class="field">
         <label class="slot slot-person" id="slot-person">
-          <input type="file" accept="image/*" id="file-person" class="sr-only">
+          <input type="file" accept="image/*,.heic,.heif" id="file-person" class="sr-only">
           <span class="slot-empty">点这里放人像<br>或把照片拖进来</span>
           <img class="slot-preview" id="preview-person" alt="" hidden>
           <button class="slot-zoom" id="zoom-person" type="button" aria-label="看大图" hidden>⤢</button>
@@ -47,12 +47,12 @@
 
       <li class="field">
         <label class="slot slot-garment" id="slot-garment">
-          <input type="file" accept="image/*" id="file-garment" class="sr-only" multiple>
+          <input type="file" accept="image/*,.heic,.heif" id="file-garment" class="sr-only" multiple>
           <span class="slot-empty">点这里放衣服<br>一次放好几件也行</span>
         </label>
         <ul class="chips" id="garment-chips"></ul>
         <p class="tip">每件衣服出一张图。</p>
-        <input type="file" accept="image/*" id="file-extract" class="sr-only">
+        <input type="file" accept="image/*,.heic,.heif" id="file-extract" class="sr-only">
         <button class="link" id="extract" type="button">从照片里提取衣服</button>
       </li>
 

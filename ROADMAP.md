@@ -215,6 +215,29 @@ README 里那两张图拍的是旧界面：`outputs/page.png` 停在「从照片
 
 ---
 
+## 手机照片直接可用（2026-10-31 下午）
+
+**要什么**：手机上拍的照片直接拖进页面就能用，不用先另存、转动、转格式。两个具体毛病：
+
+- 竖拍照片带 EXIF 方向：浏览器按方向显示，PIL 不认 → 页面预览是正的，生成出来是躺倒的；
+- iPhone 的 HEIC：Pillow 默认根本不解码，传到服务端直接报错，而报错位置在 ComfyUI，用户看不懂。
+
+**怎么做的**：
+
+1. 新增 `app/core/photos.py`。`open_upright()` 是所有读图的统一入口（注册 pillow-heif → `Image.open` → `ImageOps.exif_transpose`，EXIF 坏了退回原图）；上传时 `prepare_upload()` 再归一化一次：转正、透明底铺白、去 EXIF/GPS、长边超 4096 缩、统一 JPEG q95 optimize，落盘文件名改成时间戳 + 安全 stem。6 处读图（`parse_clothes` / `extract_garment` / `crop` / `rules` / `faces` / `hands`）全部改走它，不再各自 `Image.open`。
+2. HEIC 走可选依赖：装了 `pillow-heif` 就转成 JPG 收下（响应 `from_format: "HEIF"`，note 写「HEIC/AVIF 已转成 JPG」）；没装时返回 415 + 「先在相册里导出成 JPG」的人话，不让任务跑进 ComfyUI 才报错。`requirements.txt` 已列 `pillow-heif`（可选）。
+3. 前端：三个 file input 的 `accept` 加 `.heic,.heif`；上传响应带 `note / rotated`，页面在 syncRun 的提示语之后补一句（照片已转正 / HEIC 已转成 JPG / 太大已缩小）；一次传多张时把失败的文件名合并成一条提示，不再被 syncRun 的提示语盖掉。
+
+**实测**：
+
+- 单测 `tools/tests/test_photos.py` 30 项全过：方向 6 转正（120×80 → 80×120，红块从左上到右上）、方向 1 不动、正方形转 90° 也报转正、导出后没有 274 方向标记、透明 PNG 铺白、5000×100 缩到 4096、真 HEIC 转 JPG、假 HEIC 给「先导出成 JPG」、坏文件报「打不开」、接口落盘竖图、真 HEIC 走接口 200、假 HEIC 415。
+- 端到端：把 `samples/demo_person_a.jpg` 物理逆时针转 90°、再写 EXIF 方向 6（模拟手机竖拍），上传后落盘图与原图逐像素平均差 0.18（q95 重编码损耗），`rotated: true`；同一张图转成 HEIC 上传，`from_format: HEIF`、转成 JPG；用这两张图真跑一次换装：84.4 秒、首轮通过、5/5 质检全过（脸 0.89、身体变化 77%、手 2/2、背景距离 11）。
+- 回归：`tools/check.py` 11/11（新增 test_photos）、`replay.py --quiet` 46 次尝试翻转 0、`api_baseline.py check` 14 个接口结构一致（接口形状变了，基线重录过一次；顺手修了探针里那张 1×1 PNG——它本来是坏的 CRCs，以前上传不解码所以没暴露）。
+
+**留下的问题**：只处理方向这一项 EXIF，其他元数据一律丢掉（这是有意的，GPS 不该跟着走）；HEIC 要装可选依赖才真能收；上传仍是 base64 JSON（30MB 文件 → 约 40MB 请求体），大图会慢，改 multipart 是下一步的事，目前没有痛感，先不动。
+
+---
+
 ## 明确不做
 
 - **换脸**：目标是服装迁移，不是把人脸换上去

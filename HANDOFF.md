@@ -33,7 +33,7 @@
 
 ## 现在的状态
 
-46 个提交，和 origin 同步。已完成：本地串行队列、云端接百炼、设置抽屉、花费统计、界面简化（两个槽一个按钮）、点开看大图、从照片里提取衣服、README 配图换成现在这版界面（网页 + 桌面 + 检验单 + 22 秒演示动图）。
+47 个提交，和 origin 同步。已完成：本地串行队列、云端接百炼、设置抽屉、花费统计、界面简化（两个槽一个按钮）、点开看大图、从照片里提取衣服、README 配图换成现在这版界面（网页 + 桌面 + 检验单 + 22 秒演示动图）、手机照片直接可用（EXIF 方向转正 + HEIC 可选转换 + 上传归一化）。
 
 三件明确没做，都在 `ROADMAP.md` 末尾：
 
@@ -43,4 +43,4 @@
 
 ## 机器上的东西不要重复写
 
-git 用 `D:\Godot\tools\git\cmd\git.exe`；推送走 `127.0.0.1:6134` 代理；密钥在 `config.local.json`（被 `.gitignore` 挡着，还有 pre-commit 钩子拦着）；`ELECTRON_RUN_AS_NODE`、GBK 的 `.bat`、OpenCV 读不了中文路径这些坑，README 的「五个踩过的坑」里都写过，翻那儿就行。
+git 用 `D:\Godot\tools\git\cmd\git.exe`；推送走 `127.0.0.1:6134` 代理；密钥在 `config.local.json`（被 `.gitignore` 挡着，还有 pre-commit 钩子拦着）；`ELECTRON_RUN_AS_NODE`、GBK 的 `.bat`、OpenCV 读不了中文路径这些坑，README 的「六个踩过的坑」里都写过，翻那儿就行。

@@ -1,4 +1,8 @@
-"""上传接口：页面把图片转成 base64 发上来，落到 uploads/。
+"""上传接口：页面把图片转成 base64 发上来，归一化后落到 uploads/。
+
+落盘之前先过 app/core/photos.py：按 EXIF 方向转正、透明底铺白、去元数据、
+统一成 JPEG。这样下游（ComfyUI、人像解析、判定）拿到的都是同一张"正"图，
+不会出现"页面预览是正的、处理出来是躺倒的"。
 
 文件名加时间戳前缀，避免同名覆盖；非 ASCII 字符替换成下划线，免得在
 ComfyUI 那侧踩中文路径的坑。
@@ -12,7 +16,7 @@ import urllib.parse
 
 from ...capability.prep.extract_garment import extract
 from ...core import config as app_config
-from ...core import paths
+from ...core import paths, photos
 from .. import state
 
 MAX_BYTES = 30 * 1024 * 1024
@@ -71,17 +75,29 @@ def _upload(req):
     except Exception:
         req.json({"error": "base64 解码失败"}, 400)
         return True
+    if not blob:
+        req.json({"error": "这个文件是空的"}, 400)
+        return True
     if len(blob) > MAX_BYTES:
         req.json({"error": "文件太大（上限 30MB）"}, 413)
         return True
 
+    try:
+        jpeg, meta = photos.prepare_upload(blob, name)
+    except photos.PhotoError as e:
+        req.json({"error": str(e)}, 415)
+        return True
+
     os.makedirs(paths.UPLOADS, exist_ok=True)
-    safe = SAFE.sub("_", os.path.basename(name))
-    fn = f"{time.strftime('%m%d%H%M%S')}_{safe}"
+    stem = os.path.splitext(os.path.basename(name))[0] or "upload"
+    safe = SAFE.sub("_", stem)
+    fn = f"{time.strftime('%m%d%H%M%S')}_{safe}.jpg"
     with open(os.path.join(paths.UPLOADS, fn), "wb") as f:
-        f.write(blob)
+        f.write(jpeg)
     rel = os.path.join("uploads", fn)
-    req.json({"ok": True, "file": fn, "path": rel, "url": _url(rel), "size": len(blob)})
+    req.json({"ok": True, "file": fn, "path": rel, "url": _url(rel),
+              "size": len(jpeg), "note": meta["note"],
+              "rotated": meta["rotated"], "from_format": meta["format"]})
     return True
 
 

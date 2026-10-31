@@ -173,8 +173,11 @@
   "POST /api/upload": {
     "shape": {
       "file": "str",
+      "from_format": "str",
+      "note": "str",
       "ok": "bool",
       "path": "str",
+      "rotated": "bool",
       "size": "int",
       "url": "str"
     },

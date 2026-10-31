@@ -18,6 +18,8 @@
 import os
 import time
 
+from ...core import photos
+
 _state = {"proc": None, "model": None, "device": None, "dir": None,
           "tried": False, "ok": False, "why": ""}
 
@@ -83,8 +85,7 @@ def analyze(path, models_dir, device="cpu", want_mask=False):
         import numpy as np
         import torch
         import torch.nn.functional as F
-        from PIL import Image
-        im = Image.open(path).convert("RGB")
+        im = photos.open_upright(path).convert("RGB")
         t0 = time.time()
         inputs = _state["proc"](images=im, return_tensors="pt").to(device)
         with torch.no_grad():
