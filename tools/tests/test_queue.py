@@ -10,6 +10,8 @@ import contextlib
 import io
 import os
 import sys
+import threading
+import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, ROOT)
@@ -118,6 +120,41 @@ def test_run_one_error():
         drop(job)
 
 
+def test_cloud_pool_capped():
+    """云端并发不再无限开线程：同一时刻最多 CLOUD_WORKERS 个在跑。"""
+    lock = threading.Lock()
+    active = [0]
+    peak = [0]
+    done = []
+
+    def fake(j, cfg):
+        with lock:
+            active[0] += 1
+            peak[0] = max(peak[0], active[0])
+        time.sleep(0.06)
+        with lock:
+            active[0] -= 1
+            done.append(j.id)
+
+    orig = job_queue.run_job
+    job_queue.run_job = fake
+    jobs = [keep(FakeJob(f"cloud-{i}", st="queued")) for i in range(5)]
+    try:
+        for job in jobs:
+            job_queue.submit(job, {}, serial=False)
+        deadline = time.time() + 5
+        while len(done) < len(jobs) and time.time() < deadline:
+            time.sleep(0.02)
+        check("云端并发不超过上限", peak[0] <= job_queue.CLOUD_WORKERS,
+              f"peak={peak[0]} cap={job_queue.CLOUD_WORKERS}")
+        check("云端五单都跑完", len(done) == len(jobs), f"done={len(done)}")
+        check("云端确实并发跑（不是串行）", peak[0] >= 2, f"peak={peak[0]}")
+    finally:
+        job_queue.run_job = orig
+        for job in jobs:
+            drop(job)
+
+
 def main():
     print("排队取消与队列收尾")
     test_cancel_queued()
@@ -126,6 +163,7 @@ def main():
     test_cancel_unknown()
     test_run_one_normal()
     test_run_one_error()
+    test_cloud_pool_capped()
     if FAILED:
         print(f"\n{len(FAILED)} 项失败：{FAILED}")
         return 1

@@ -80,7 +80,7 @@ def _unreadable_message(heif, name):
     return "这张图打不开，可能坏了，或者不是常见格式（JPG、PNG、WebP 都行）。"
 
 
-def _flatten(im):
+def flatten(im):
     """把各种模式统一成白底 RGB。透明区铺白，不铺黑。"""
     if im.mode == "RGB":
         return im
@@ -130,7 +130,7 @@ def prepare_upload(blob, name="upload"):
     if src_format in ("HEIF", "AVIF"):
         notes.append("HEIC/AVIF 已转成 JPG")
 
-    out = _flatten(im)
+    out = flatten(im)
     if out.mode != "RGB":
         out = out.convert("RGB")
 

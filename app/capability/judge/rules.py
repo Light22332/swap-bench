@@ -30,14 +30,16 @@ BODY_CHANGED_MIN = 0.20    # 身体区域变化块比例下限
 FACE_SIM_MIN = 0.45        # 人脸相似度下限（实测：对 0.75+，错 0.00~0.19）
 
 
-def _prep(path):
-    im = photos.open_upright(path)
+def _prep_image(im):
+    """一张读好的图 → (128×128 RGB, 宽高比)。透明底铺白，不铺黑。"""
+    im = photos.flatten(im)
     ratio = im.width / im.height
-    if im.mode in ("RGBA", "LA", "P"):
-        im = im.convert("RGBA")
-        bg = Image.new("RGBA", im.size, (255, 255, 255, 255))
-        im = Image.alpha_composite(bg, im)   # 只 convert 会让透明区变黑
     return im.convert("RGB").resize((SMALL, SMALL), Image.LANCZOS), ratio
+
+
+def _prep(path):
+    """读文件再缩到判定尺寸。留一个按路径的入口，测试和临时排查用。"""
+    return _prep_image(photos.open_upright(path))
 
 
 def _blocks(im):
@@ -94,9 +96,12 @@ def _body_changed(p, r):
 def evaluate(person_path, result_path, garment_path=None, models_dir=None, **_):
     t0 = time.time()
 
+    # 两张图各读一次，人脸/手部直接复用，不再各开各的（以前一次判定要解码六遍）
     try:
-        p, p_ratio = _prep(person_path)
-        r, r_ratio = _prep(result_path)
+        p_full = photos.open_upright(person_path)
+        r_full = photos.open_upright(result_path)
+        p, p_ratio = _prep_image(p_full)
+        r, r_ratio = _prep_image(r_full)
     except Exception as e:
         v = blank_verdict("local", f"读图失败：{e}")
         v["error"] = str(e)
@@ -107,8 +112,8 @@ def evaluate(person_path, result_path, garment_path=None, models_dir=None, **_):
     # ---- 脸 ----
     face_note = ""
     if models_dir and faces.load(models_dir):
-        pa = faces.analyze(person_path)
-        ra = faces.analyze(result_path)
+        pa = faces.analyze_image(p_full)
+        ra = faces.analyze_image(r_full)
         if pa and pa.get("emb") is not None and ra and ra.get("emb") is not None:
             sim = faces.similarity(pa["emb"], ra["emb"])
             checks["face_preserved"] = {
@@ -143,8 +148,8 @@ def evaluate(person_path, result_path, garment_path=None, models_dir=None, **_):
 
     # ---- 手 ----
     if models_dir and hands.load(models_dir):
-        ph = hands.analyze(person_path)
-        rh = hands.analyze(result_path)
+        ph = hands.analyze_image(p_full)
+        rh = hands.analyze_image(r_full)
         if ph is None or rh is None:
             checks["hand_preserved"] = {
                 "pass": None, "reason": hands.why() or "手部检测没跑起来",

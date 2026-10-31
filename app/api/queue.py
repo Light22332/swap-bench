@@ -12,20 +12,42 @@ import queue
 import threading
 import time
 import traceback
+from concurrent.futures import ThreadPoolExecutor
 
+from ..core import log
 from ..pipeline import run_job
+
+logger = log.get("queue")
+
+# 云端并发。以前每来一单开一个线程，没有上限：十几单一起进来就十几个线程
+# 同时解图、跑判定，内存和 CPU 都跟着涨。云端慢的是对方，不需要开很多，
+# 两个够跑，再多只是把本地 CPU 抢光。
+CLOUD_WORKERS = 2
 
 _local = queue.Queue()
 _lock = threading.Lock()
 _worker_started = False
+_cloud_pool = None
+
+
+def _pool():
+    """云端用的线程池，第一次用时创建（测试可以不碰它）。"""
+    global _cloud_pool
+    with _lock:
+        if _cloud_pool is None:
+            _cloud_pool = ThreadPoolExecutor(max_workers=CLOUD_WORKERS,
+                                             thread_name_prefix="cloud-job")
+        return _cloud_pool
 
 
 def submit(job, cfg, serial):
-    """serial=True 进本地队列，False 直接开线程（云端）。"""
+    """serial=True 进本地队列，False 交给云端线程池（最多 CLOUD_WORKERS 个同时跑）。"""
     if not serial:
-        threading.Thread(target=run_one, args=(job, cfg), daemon=True).start()
+        logger.info("任务 %s 走云端，交给线程池", job.id)
+        _pool().submit(run_one, job, cfg)
         return
     job.state = "queued"
+    logger.info("任务 %s 进本地队列", job.id)
     _local.put((job, cfg))
     _ensure_worker()
 
@@ -55,10 +77,16 @@ def run_one(job, cfg):
     if job.cancel_requested:
         job.state = "cancelled"
         job.finished = time.time()
+        logger.info("任务 %s 开跑前被取消", job.id)
         return
+    started = time.time()
     try:
+        logger.info("任务 %s 开始跑", job.id)
         run_job(job, cfg)
     except Exception as e:
+        logger.exception("任务 %s 跑挂了", job.id)
         traceback.print_exc()
         job.error = f"{type(e).__name__}: {e}"
         job.state = "error"
+    else:
+        logger.info("任务 %s 结束：%s，用时 %.1f 秒", job.id, job.state, time.time() - started)

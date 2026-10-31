@@ -334,6 +334,27 @@ README 里那两张图拍的是旧界面：`outputs/page.png` 停在「从照片
 
 ---
 
+## 一次判定只解两次图、模型加锁、日志（2026-10-31 晚）
+
+**要什么**：审计发现三件事——一次判定把同一张图解码六遍（`_prep` 一遍、`faces` 一遍、`hands` 一遍，两张图就是六次）；云端每来一单开一个线程，没有上限；`cv2` 模型是进程里唯一的，多线程同时 `setInput` 会互相踩。日志只有 `print`，桌面版是隐藏窗口，出问题什么都看不到。
+
+**怎么做的**：
+
+1. `photos.flatten()` 公开；`faces.analyze_image(im)` / `hands.analyze_image(im)` 接收已经读好的图，`rules.evaluate()` 里两张图各 `open_upright()` 一次，人脸和手部复用。
+2. `faces` / `hands` 各加一把 `threading.Lock`，`load()` 和推理都串行；`queue.submit()` 的云端分支改成 `ThreadPoolExecutor(max_workers=CLOUD_WORKERS=2)`。
+3. 新增 `app/core/log.py`：`swapbench` logger + 控制台 + `runs/server.log`（2MB × 3 份轮转）；`serve()` 启动时 `log.setup()`，记录启动信息、任务进出队列/开始/结束、模型加载失败、413、路由异常（500 会提示去看日志）。
+
+**实测**：
+
+- 计数脚本：一次判定里 `open_upright()` 只被调 2 次（之前 6 次），判定 0.45 秒；`replay.py` 复判 46 次尝试翻转 0（解码减少没改判定结果）。
+- `tools/tests/test_log.py` 4 项；`test_queue.py` 加云端并发测试（5 单峰值 2 个并发、全部跑完）；`test_rules.py` 加「两张图各只解码一次」。
+- 重启后真跑一单（150 秒 done），`runs/server.log` 里能看到「任务 … 进本地队列 / 开始跑 / 结束：done，用时 145.5 秒」。
+- `tools/check.py` 18/18、`api_baseline.py check` 14 个接口一致。
+
+**留下的问题**：云端并发写死 2，没做成设置项；模型锁是每模块一把，云端多任务时判定整体仍串行；日志按大小轮转，没有「只留 30 天」之类的天数控制。
+
+---
+
 ## 明确不做
 
 - **换脸**：目标是服装迁移，不是把人脸换上去

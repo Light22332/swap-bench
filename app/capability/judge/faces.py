@@ -14,17 +14,22 @@
 import os
 import shutil
 import tempfile
+import threading
 
 import cv2
 import numpy as np
 from PIL import Image
 
-from ...core import photos
+from ...core import log, photos
 
 DET_FILE = "face_detection_yunet.onnx"
 REC_FILE = "face_recognition_sface.onnx"
 
 _state = {"det": None, "rec": None, "tried": False, "ok": False, "why": ""}
+# 人脸模型是进程里唯一的：云端并发跑任务时会同时进来几个线程，
+# cv2 的 detector.setInputSize + detect 不是线程安全的，串起来用。
+_lock = threading.Lock()
+logger = log.get("judge.faces")
 
 
 def _ascii_copy(path):
@@ -38,13 +43,9 @@ def _ascii_copy(path):
     return dst
 
 
-def _to_bgr(path, max_side=960):
-    im = photos.open_upright(path)
-    if im.mode in ("RGBA", "LA", "P"):
-        im = im.convert("RGBA")
-        bg = Image.new("RGBA", im.size, (255, 255, 255, 255))
-        im = Image.alpha_composite(bg, im)
-    im = im.convert("RGB")
+def _img_to_bgr(im, max_side=960):
+    """一张读好的图 → BGR。缩小只为省时间，不改判定。"""
+    im = photos.flatten(im)
     w, h = im.size
     s = max_side / max(w, h)
     if s < 1:
@@ -55,23 +56,27 @@ def _to_bgr(path, max_side=960):
 
 def load(models_dir):
     """懒加载两个模型。缺文件时返回 False，调用方降级。"""
-    if _state["tried"]:
+    with _lock:
+        if _state["tried"]:
+            return _state["ok"]
+        _state["tried"] = True
+        det = os.path.join(models_dir, DET_FILE)
+        rec = os.path.join(models_dir, REC_FILE)
+        missing = [p for p in (det, rec) if not os.path.isfile(p)]
+        if missing:
+            _state["why"] = "缺少模型：" + "、".join(os.path.basename(p) for p in missing)
+            logger.warning("人脸模型没加载：%s", _state["why"])
+            return False
+        try:
+            _state["det"] = det
+            _state["rec"] = cv2.FaceRecognizerSF.create(_ascii_copy(rec), "")
+            _state["ok"] = True
+            logger.info("人脸模型已加载")
+        except Exception as e:                     # 模型坏了也不要炸整条流水线
+            _state["why"] = f"{type(e).__name__}: {e}"
+            _state["ok"] = False
+            logger.warning("人脸模型加载失败：%s", _state["why"])
         return _state["ok"]
-    _state["tried"] = True
-    det = os.path.join(models_dir, DET_FILE)
-    rec = os.path.join(models_dir, REC_FILE)
-    missing = [p for p in (det, rec) if not os.path.isfile(p)]
-    if missing:
-        _state["why"] = "缺少模型：" + "、".join(os.path.basename(p) for p in missing)
-        return False
-    try:
-        _state["det"] = det
-        _state["rec"] = cv2.FaceRecognizerSF.create(_ascii_copy(rec), "")
-        _state["ok"] = True
-    except Exception as e:                     # 模型坏了也不要炸整条流水线
-        _state["why"] = f"{type(e).__name__}: {e}"
-        _state["ok"] = False
-    return _state["ok"]
 
 
 def why():
@@ -89,36 +94,49 @@ def _detector(w, h):
 
 
 def analyze(path):
-    """返回 {"count": 人脸数, "emb": 最大人脸的特征向量或 None, "box": 归一化框}"""
+    """读文件后交给 analyze_image()。读不了返回 None。"""
+    try:
+        im = photos.open_upright(path)
+    except Exception:
+        return None
+    return analyze_image(im)
+
+
+def analyze_image(im):
+    """在已经读好的图上检测。模型没就绪或检测失败返回 None。
+
+    读图交给调用方做，是为了让一次判定里两张图只解码一次（参见 rules.evaluate）。
+    """
     if not _state["ok"]:
         return None
     try:
-        img = _to_bgr(path)
+        img = _img_to_bgr(im)
     except Exception:
         return None
     h, w = img.shape[:2]
-    try:
-        _, faces = _detector(w, h).detect(img)
-    except Exception:
-        return None
-    if faces is None or len(faces) == 0:
-        return {"count": 0, "emb": None, "box": None}
-    faces = sorted(faces, key=lambda f: -f[14])
-    best = faces[0]
-    try:
-        crop = _state["rec"].alignCrop(img, best)
-        emb = _state["rec"].feature(crop).flatten()
-    except Exception:
-        emb = None
-    return {
-        "count": len(faces),
-        "emb": emb,
-        "box": {
-            "x": float(best[0] / w), "y": float(best[1] / h),
-            "w": float(best[2] / w), "h": float(best[3] / h),
-            "score": float(best[14]),
-        },
-    }
+    with _lock:
+        try:
+            _, faces = _detector(w, h).detect(img)
+        except Exception:
+            return None
+        if faces is None or len(faces) == 0:
+            return {"count": 0, "emb": None, "box": None}
+        faces = sorted(faces, key=lambda f: -f[14])
+        best = faces[0]
+        try:
+            crop = _state["rec"].alignCrop(img, best)
+            emb = _state["rec"].feature(crop).flatten()
+        except Exception:
+            emb = None
+        return {
+            "count": len(faces),
+            "emb": emb,
+            "box": {
+                "x": float(best[0] / w), "y": float(best[1] / h),
+                "w": float(best[2] / w), "h": float(best[3] / h),
+                "score": float(best[14]),
+            },
+        }
 
 
 def similarity(a, b):

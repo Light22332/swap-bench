@@ -120,6 +120,48 @@ print("读不到图时不抛异常")
 v5 = rules.evaluate(p_gray, os.path.join(TMP, "没有这个文件.png"), models_dir=None)
 check("返回 error 判定", bool(v5.get("error")) and v5["passed"] is False, str(v5.get("error")))
 
+print("一次判定只解码两张图（人脸/手部复用同一张，不各开各的）")
+from app.core import photos as core_photos       # noqa: E402
+
+opened = []
+_orig_open = core_photos.open_upright
+
+
+def counting_open(src):
+    opened.append(str(src))
+    return _orig_open(src)
+
+
+class _FakeFaces:
+    @staticmethod
+    def load(models_dir):
+        return True
+
+    @staticmethod
+    def analyze_image(im):
+        return {"count": 1, "emb": None, "box": None}
+
+
+class _FakeHands:
+    @staticmethod
+    def load(models_dir):
+        return True
+
+    @staticmethod
+    def analyze_image(im):
+        return {"count": 1, "raw": 1, "hands": [], "weak": []}
+
+
+_orig_faces, _orig_hands = rules.faces, rules.hands
+core_photos.open_upright = counting_open
+rules.faces, rules.hands = _FakeFaces, _FakeHands
+try:
+    rules.evaluate(p_gray, save(canvas(body=(30, 60, 120)), "worn_once.png"), models_dir="stub")
+finally:
+    rules.faces, rules.hands = _orig_faces, _orig_hands
+    core_photos.open_upright = _orig_open
+check("两张图各只解码一次", len(opened) == 2, f"opened={len(opened)}")
+
 print()
 if FAILED:
     print(f"{len(FAILED)} 项没过：" + "、".join(FAILED))

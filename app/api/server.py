@@ -10,6 +10,7 @@ import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from ..core import config as app_config
+from ..core import log
 from . import state
 from .http import Request
 from .routes import config as config_route
@@ -17,6 +18,8 @@ from .routes import jobs as jobs_route
 from .routes import run as run_route
 from .routes import static as static_route
 from .routes import upload as upload_route
+
+logger = log.get("server")
 
 GET_ROUTES = (static_route.handle, config_route.handle_get, jobs_route.handle_get)
 POST_ROUTES = (upload_route.handle_post, run_route.handle_post,
@@ -106,9 +109,19 @@ class Handler(BaseHTTPRequestHandler):
 
     def _dispatch(self, routes):
         req = Request(self)
-        for route in routes:
-            if route(req):
-                return
+        try:
+            for route in routes:
+                if route(req):
+                    return
+        except (BrokenPipeError, ConnectionResetError):
+            raise                       # 浏览器提前断开，不是服务端的问题
+        except Exception:
+            logger.exception("处理 %s %s 时出错", self.command, self.path)
+            try:
+                req.json({"error": "服务内部出了点问题，看一下 runs/server.log"}, 500)
+            except Exception:
+                pass                     # 响应可能已经发了一半，发不出去就算了
+            return
         req.json({"error": "not found"}, 404)
 
     def do_GET(self):
@@ -123,6 +136,7 @@ class Handler(BaseHTTPRequestHandler):
         if self._body_error:
             # 体太大：没读，连接状态已经对不齐了，回完就关
             self.close_connection = True
+            logger.warning("请求体太大，拒收：%s 字节", self._body_error)
             self._json({"error": f"请求体太大（{self._body_error} 字节）；"
                                  f"单张图上限 30MB，换个小的再传"}, 413)
             return
@@ -130,13 +144,17 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def serve():
+    log.setup()
     cfg = state.load_config()
     host, port = app_config.server_addr(cfg)
     srv = ThreadingHTTPServer((host, port), Handler)
+    logger.info("换装工作台 → http://%s:%s（后端 %s，质检 %s）", host, port,
+                app_config.backend(cfg), app_config.section(cfg, "judge")["mode"])
     print(f"换装工作台 → http://{host}:{port}")
     print(f"后端 {app_config.backend(cfg)} | 质检 {app_config.section(cfg, 'judge')['mode']}")
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
+        logger.info("收到 Ctrl+C，停止")
         print("\n停止")
         sys.exit(0)

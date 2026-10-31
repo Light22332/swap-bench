@@ -17,12 +17,13 @@
 import os
 import shutil
 import tempfile
+import threading
 
 import cv2
 import numpy as np
 from PIL import Image
 
-from ...core import photos
+from ...core import log, photos
 
 PALM_FILE = "palm_detection_mediapipe_2023feb.onnx"
 POSE_FILE = "handpose_estimation_mediapipe_2023feb.onnx"
@@ -33,6 +34,10 @@ PALM_SCORE = 0.30        # 一级门槛放低，误报交给二级筛
 POSE_CONF = 0.70         # 二级门槛：实测好手 0.90~0.99，糊成一片的 0.52，边界样本 0.75
 
 _state = {"palm": None, "pose": None, "tried": False, "ok": False, "why": ""}
+# 两个 ONNX 实例是进程里唯一的，cv2.dnn 的 setInput/forward 不能并发调：
+# 云端并发跑任务时用一把锁串起来。
+_lock = threading.Lock()
+logger = log.get("judge.hands")
 
 
 def _ascii_copy(path):
@@ -44,13 +49,9 @@ def _ascii_copy(path):
     return dst
 
 
-def _to_bgr(path, max_side=1280):
-    im = photos.open_upright(path)
-    if im.mode in ("RGBA", "LA", "P"):
-        im = im.convert("RGBA")
-        bg = Image.new("RGBA", im.size, (255, 255, 255, 255))
-        im = Image.alpha_composite(bg, im)
-    im = im.convert("RGB")
+def _img_to_bgr(im, max_side=1280):
+    """一张读好的图 → BGR。缩小只为省时间，不改判定。"""
+    im = photos.flatten(im)
     w, h = im.size
     s = max_side / max(w, h)
     if s < 1:
@@ -196,23 +197,27 @@ class HandPose:
 
 
 def load(models_dir):
-    if _state["tried"]:
+    with _lock:
+        if _state["tried"]:
+            return _state["ok"]
+        _state["tried"] = True
+        palm = os.path.join(models_dir, PALM_FILE)
+        pose = os.path.join(models_dir, POSE_FILE)
+        missing = [p for p in (palm, pose) if not os.path.isfile(p)]
+        if missing:
+            _state["why"] = "缺少模型：" + "、".join(os.path.basename(p) for p in missing)
+            logger.warning("手部模型没加载：%s", _state["why"])
+            return False
+        try:
+            _state["palm"] = PalmDetector(_ascii_copy(palm))
+            _state["pose"] = HandPose(_ascii_copy(pose))
+            _state["ok"] = True
+            logger.info("手部模型已加载")
+        except Exception as e:
+            _state["why"] = f"{type(e).__name__}: {e}"
+            _state["ok"] = False
+            logger.warning("手部模型加载失败：%s", _state["why"])
         return _state["ok"]
-    _state["tried"] = True
-    palm = os.path.join(models_dir, PALM_FILE)
-    pose = os.path.join(models_dir, POSE_FILE)
-    missing = [p for p in (palm, pose) if not os.path.isfile(p)]
-    if missing:
-        _state["why"] = "缺少模型：" + "、".join(os.path.basename(p) for p in missing)
-        return False
-    try:
-        _state["palm"] = PalmDetector(_ascii_copy(palm))
-        _state["pose"] = HandPose(_ascii_copy(pose))
-        _state["ok"] = True
-    except Exception as e:
-        _state["why"] = f"{type(e).__name__}: {e}"
-        _state["ok"] = False
-    return _state["ok"]
 
 
 def why():
@@ -220,34 +225,47 @@ def why():
 
 
 def analyze(path, max_hands=6):
+    """读文件后交给 analyze_image()。读不了返回 None。"""
+    try:
+        im = photos.open_upright(path)
+    except Exception:
+        return None
+    return analyze_image(im, max_hands=max_hands)
+
+
+def analyze_image(im, max_hands=6):
     """返回 {"count": 复核通过的手数, "raw": 一级检出数, "hands": [...], "weak": [...]}
 
     weak 是一级找到了框、但 21 点复核没过的地方。它有用：真手被挡住时它是个漏检，
     手指糊成一团时它是个"手画坏了"的证据——两种情况的结论一样（不合格），
     但说给用户的话不一样。
+
+    读图交给调用方做，是为了让一次判定里两张图只解码一次（参见 rules.evaluate）。
     """
     if not _state["ok"]:
         return None
     try:
-        img = _to_bgr(path)
+        img = _img_to_bgr(im)
     except Exception:
         return None
-    try:
-        palms = _state["palm"].detect(img)
-    except Exception as e:
-        _state["why"] = f"{type(e).__name__}: {e}"
-        return None
-    hands, weak = [], []
-    for p in palms:
+    with _lock:
         try:
-            r = _state["pose"].infer(img, p)
-        except Exception:
-            continue
-        if r is None:
-            continue
-        r["palm_score"] = float(p[18])
-        if len(hands) < max_hands and r["ok"]:
-            hands.append(r)
-        elif not r["ok"]:
-            weak.append({"conf": r["conf"], "palm_score": r["palm_score"]})
-    return {"count": len(hands), "raw": len(palms), "hands": hands, "weak": weak}
+            palms = _state["palm"].detect(img)
+        except Exception as e:
+            _state["why"] = f"{type(e).__name__}: {e}"
+            logger.warning("手掌检测失败：%s", _state["why"])
+            return None
+        hands, weak = [], []
+        for p in palms:
+            try:
+                r = _state["pose"].infer(img, p)
+            except Exception:
+                continue
+            if r is None:
+                continue
+            r["palm_score"] = float(p[18])
+            if len(hands) < max_hands and r["ok"]:
+                hands.append(r)
+            elif not r["ok"]:
+                weak.append({"conf": r["conf"], "palm_score": r["palm_score"]})
+        return {"count": len(hands), "raw": len(palms), "hands": hands, "weak": weak}
