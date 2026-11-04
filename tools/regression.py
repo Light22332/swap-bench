@@ -1,12 +1,12 @@
-"""回归基线：固定八组输入跑一遍，把数字存下来，改代码前后一比就知道有没有变差。
+"""回归基线：固定十四组输入跑一遍，把数字存下来，改代码前后一比就知道有没有变差。
 
 生成是随机的，所以比的是分布不是像素：合格率、首轮通过率、平均重试、每项检查的
 通过率、人脸相似度分布。同一条代码连跑两次也会有小幅波动，看的是"有没有明显掉"。
 
-  python tools/regression.py run --out reports/base.json
-  python tools/regression.py compare reports/base.json reports/after.json
+  python tools/regression.py run --out reports/hand-base.json
+  python tools/regression.py compare reports/hand-base.json reports/after.json
 
-跑一组要一两分钟（要真生成），八组十几分钟。跑到一半断了就重跑，
+跑一组要一两分钟（要真生成），十四组半小时上下。跑到一半断了就重跑，
 已经跑过的组会复用同一个 job 记录里的结果——但简单起见这里不做断点续跑。
 """
 import argparse
@@ -19,17 +19,24 @@ import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HOST = "http://127.0.0.1:8770"
-SAMPLES = os.path.join(ROOT, "bench")
 
 PAIRS = [
-    ("case1_person.jpg", "case1_garment.jpg"),
-    ("case1_person.jpg", "case3_garment.jpg"),
-    ("case1_person.jpg", "case4_garment.jpg"),
-    ("case1_person.jpg", "case4_garment_crop.jpg"),
-    ("case4_person.png", "case1_garment.jpg"),
-    ("case4_person.png", "case3_garment.jpg"),
-    ("case4_person.png", "case4_garment.jpg"),
-    ("case4_person.png", "case4_garment_crop.jpg"),
+    # bench/：两个人的五件衣服（不进仓库，见 bench/README.md）
+    ("bench/case1_person.jpg", "bench/case1_garment.jpg"),
+    ("bench/case1_person.jpg", "bench/case2_garment.jpg"),
+    ("bench/case1_person.jpg", "bench/case3_garment.jpg"),
+    ("bench/case1_person.jpg", "bench/case4_garment.jpg"),
+    ("bench/case1_person.jpg", "bench/case4_garment_crop.jpg"),
+    ("bench/case4_person.png", "bench/case1_garment.jpg"),
+    ("bench/case4_person.png", "bench/case2_garment.jpg"),
+    ("bench/case4_person.png", "bench/case3_garment.jpg"),
+    ("bench/case4_person.png", "bench/case4_garment.jpg"),
+    ("bench/case4_person.png", "bench/case4_garment_crop.jpg"),
+    # samples/：仓库自带的两个人像 × 两件衣服，别人克隆下来也能复跑
+    ("samples/demo_person_a.jpg", "samples/demo_garment_1.jpg"),
+    ("samples/demo_person_a.jpg", "samples/demo_garment_2.jpg"),
+    ("samples/demo_person_b.jpg", "samples/demo_garment_1.jpg"),
+    ("samples/demo_person_b.jpg", "samples/demo_garment_2.jpg"),
 ]
 
 
@@ -52,8 +59,8 @@ def wait_job(jid, timeout=1200):
 
 
 def one_pair(person, garment):
-    rel_person = os.path.join("bench", person).replace("\\", "/")
-    rel_garment = os.path.join("bench", garment).replace("\\", "/")
+    rel_person = person.replace("\\", "/")
+    rel_garment = garment.replace("\\", "/")
     data = call("/api/run", {"person": rel_person,
                              "garments": [{"path": rel_garment, "name": garment}]})
     job = wait_job(data["job_id"])
@@ -70,6 +77,8 @@ def one_pair(person, garment):
         "attempts": case.get("attempts_used"),
         "elapsed_s": job.get("elapsed_s"),
         "checks": {k: (v or {}).get("pass") for k, v in checks.items()},
+        "checks_detail": checks,
+        "hand": checks.get("hand_preserved") or {},
         "face_sim": (checks.get("face_preserved") or {}).get("sim"),
     }
 
@@ -94,8 +103,20 @@ def summarize(rows):
         "avg_attempts": round(sum(attempts) / len(attempts), 2) if attempts else 0,
         "avg_elapsed_s": round(sum(elapsed) / len(elapsed), 1) if elapsed else 0,
         "per_check_pass_rate": per_check,
+        "hand_fail_kinds": _count_hand_kinds(rows),
         "face_sim": sorted(round(s, 3) for s in sims),
     }
+
+
+def _count_hand_kinds(rows):
+    """手部没过时，按原因分类：missing 少一只 / mangled 画糊了 / occluded 被挡住 / extra 多一只。"""
+    out = {}
+    for r in rows:
+        h = r.get("hand") or {}
+        if h.get("pass") is False:
+            kind = h.get("kind") or "unknown"
+            out[kind] = out.get(kind, 0) + 1
+    return out
 
 
 def save(out, rows):
@@ -121,7 +142,11 @@ def cmd_run(args):
         done = {(r["person"], r["garment"]) for r in rows}
         print(f"接着上次跑：已有 {len(rows)} 组")
 
-    for i, (person, garment) in enumerate(PAIRS, 1):
+    pairs = PAIRS
+    if args.only:
+        pairs = [p for p in PAIRS if args.only in p[0] or args.only in p[1]]
+        print(f"只跑匹配 {args.only!r} 的 {len(pairs)} 组", flush=True)
+    for i, (person, garment) in enumerate(pairs, 1):
         if (person, garment) in done:
             print(f"[{i}/{len(PAIRS)}] {person} + {garment} 已有，跳过", flush=True)
             continue
@@ -183,6 +208,7 @@ def main():
     r = sub.add_parser("run", help="跑一遍并把结果存下来")
     r.add_argument("--out", default="reports/regression.json")
     r.add_argument("--resume", action="store_true", help="接着上次的报告跑，跳过已完成的那几组")
+    r.add_argument("--only", default=None, help="只跑路径里含这个字符串的组（调试手部失败时用）")
     c = sub.add_parser("compare", help="两份报告对比")
     c.add_argument("before")
     c.add_argument("after")
