@@ -304,6 +304,25 @@ npm install
 npm run smoke
 ```
 
+### 打 Windows 安装包（可选）
+
+```bash
+npm run dist
+# → dist/SwapBench-0.1.0-setup.exe（NSIS，可选安装目录，83.7MB）
+```
+
+构建的两个前提（这台机器上都满足）：
+
+- electron 33 的解压版在 `node_modules/electron/dist`；electron-builder 的 nsis / winCodeSign 工具集在
+  `%LOCALAPPDATA%\electron-builder\Cache`。被墙时 `npm run dist` 会卡在工具集下载，改成本地构建：
+  `set CSC_IDENTITY_AUTO_DISCOVERY=false` + `node node_modules\electron-builder\cli.js --win nsis -c.electronDist=node_modules\electron\dist`；
+  如果 7z 工具集也缺，把 `ELECTRON_BUILDER_7ZIP_PATH` 指到一个本机 `7z.exe`（绝对路径）。
+- 安装包**不带** `models/` 和 ComfyUI 的扩散模型（体积太大）：装完把 `config.json` 的 `desktop.python`、
+  `desktop.comfyui_dir` 指到本机，再按 `models/README.md` 下质检模型，然后双击桌面图标（首次生成要等约 90 秒加载）。
+
+实测（2026-11-04 傍晚）：静默安装 270MB、桌面和开始菜单快捷方式都在、装机后冒烟截图正常；
+卸载后安装目录、桌面和开始菜单快捷方式全部清掉。
+
 ## 怎么跑（浏览器）
 
 前置：ComfyUI 已启动（默认 8188），扩散模型在 `config.json` 里指定，质检和裁剪的模型在 `models/` 下（照 `models/README.md` 下载，约 157MB）。

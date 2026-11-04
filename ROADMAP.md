@@ -451,6 +451,33 @@ README 的回归基线从 8 组更新到 14 组。
 **留下的问题**：对照只有 8 vs 8 且全是长袖厚外套，短袖/无袖没测；手部仍是 5 项里最弱的一项，
 尝试级 26% → 20% 不是根治；判定只看手数和复核分数，多一根少一根仍然判不出来。
 
+## Windows 安装包（2026-11-04 傍晚）
+
+要什么：双击一个 setup.exe 装上，桌面/开始菜单有图标，卸载干净。现场演示不必再开终端。
+
+做法：
+
+1. `package.json` 的 electron-builder 配置早就有（`win.target=nsis`、`oneClick:false`、可选安装目录、
+   `artifactName=SwapBench-${version}-setup.${ext}`、`signExecutable:false`、不打包 `models/` 与 ComfyUI 模型）；
+2. electron-builder 26 的工具集缓存是新布局（`Cache/<名字>-<版本>/<名字>-<版本>-<hash5>/` 加一个 `.state`），
+   这台机器上是 10-29 留下的旧布局，构建时会去 GitHub 重新下、被墙直接 ETIMEDOUT。绕过办法：把旧缓存按新布局
+   拷一份、补一个 `state=complete` 的 `.state`（fileCount 写实际值），nsis / nsis-resources / winCodeSign 三件就能命中；
+   剩下的 7z 工具集用 `ELECTRON_BUILDER_7ZIP_PATH` 指到 `node_modules/electron-winstaller/vendor/7z.exe`；
+3. electron 33 用本地 `node_modules/electron/dist`（`-c.electronDist=...`），不联网下 Electron。
+
+实测：
+
+- 产出 `dist/SwapBench-0.1.0-setup.exe` 87,716,183 字节（83.7MB）；
+- 静默安装 `setup.exe /S /D=<目录>` 退出码 0，装出来 270MB，桌面和开始菜单快捷方式都在；
+- 装机后跑冒烟（`SWAP_SMOKE=1` 启动）：`title=换衣服`、提示语正常、截图 60,150 字节、自己拉起 run.py 后端；
+- 卸载 `Uninstall 换装验收台.exe /S` 退出码 0，安装目录、桌面/开始菜单快捷方式全清。
+
+留下的问题：
+
+- 没签名，装机时 SmartScreen 会拦一次（点「更多信息 → 仍要运行」）；
+- `models/` 和 ComfyUI 模型不随包走，换机器要照 `models/README.md` 重配一次；
+- 构建依赖本机工具集缓存，换机器/换 electron-builder 版本要重新准备（README 里写了绕过命令）。
+
 ## 明确不做
 
 - **换脸**：目标是服装迁移，不是把人脸换上去
