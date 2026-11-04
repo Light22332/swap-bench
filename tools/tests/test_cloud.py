@@ -21,7 +21,7 @@ PNG = bytes.fromhex("89504e470d0a1a0a") + b"fake-png-body"
 TINY = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==")
 
-MODE = {"mode": "b64", "body": b""}
+MODE = {"mode": "b64", "body": b"", "path": ""}
 FAILED = []
 OUT = os.path.join(ROOT, "outputs", "_test_cloud")
 
@@ -40,6 +40,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         n = int(self.headers.get("Content-Length") or 0)
+        MODE["path"] = self.path
         MODE["body"] = self.rfile.read(n)
         port = self.server.server_address[1]
         mode = MODE["mode"]
@@ -54,6 +55,9 @@ class Handler(BaseHTTPRequestHandler):
             self._json(401, {"error": {"message": "invalid api key"}})
         elif mode == "429":
             self._json(429, {"error": {"message": "rate limited, retry later"}})
+        elif mode == "sf":
+            self._json(200, {"images": [{"url": f"http://127.0.0.1:{port}/img.png"}],
+                             "timings": {"inference": 1.25}, "seed": 7})
         else:
             self._json(500, {"error": "boom"})
 
@@ -161,6 +165,32 @@ def main():
           be.native_root())
     be = CloudBackend(make_cfg(port, shape="dashscope"))
     check("显式指定优先", be.resolve_shape() == "dashscope", be.resolve_shape())
+
+    print("硅基流动形状")
+    be = CloudBackend({"cloud": {"base_url": "https://api.siliconflow.cn/v1",
+                                 "api_key": "k", "model": "Qwen/Qwen-Image-Edit-2509"},
+                       "paths": {"outputs": OUT}})
+    check("siliconflow 地址自动认出来", be.resolve_shape() == "siliconflow", be.resolve_shape())
+    MODE["mode"] = "sf"
+    MODE["path"] = ""
+    req = GenRequest(person_path=os.path.join(OUT, "p.png"),
+                     garment_path=os.path.join(OUT, "g.png"),
+                     instruction="把图1的衣服换成图2的", negative="多一只手",
+                     resolution=1024, prefix="sfcase")
+    res = CloudBackend(make_cfg(port, shape="siliconflow")).generate(req)
+    check("成功", res.ok, str(res.error))
+    check("落盘是 png", bool(res.image_path) and res.image_path.endswith(".png"), str(res.image_path))
+    check("文件内容就是下载到的字节", os.path.getsize(res.image_path) == len(PNG), str(res.image_path))
+    check("打的是 /images/generations", MODE["path"] == "/images/generations", MODE["path"])
+    body = json.loads(MODE["body"].decode())
+    check("JSON 里 image 是人物 data URL", str(body.get("image", "")).startswith("data:image/png;base64,"))
+    check("JSON 里 image2 是衣服 data URL", str(body.get("image2", "")).startswith("data:image/png;base64,"))
+    check("prompt 传了指令", body.get("prompt") == req.instruction, str(body.get("prompt")))
+    check("negative_prompt 传了", body.get("negative_prompt") == "多一只手", str(body.get("negative_prompt")))
+    check("没有 multipart 边界", b"--" not in MODE["body"][:2])
+    check("记成 url + siliconflow", res.meta.get("via") == "url" and res.meta.get("shape") == "siliconflow", str(res.meta))
+    check("usage 里带 timings 与 seed", res.meta.get("usage", {}).get("timings", {}).get("inference") == 1.25 and res.meta.get("usage", {}).get("seed") == 7, str(res.meta))
+    check("按单价算了成本", abs(res.cost - 0.04) < 1e-9, str(res.cost))
 
     srv.shutdown()
     print()

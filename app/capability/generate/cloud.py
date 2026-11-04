@@ -1,12 +1,18 @@
-"""云端图像编辑后端。两种接口形状：
+"""云端图像编辑后端。三种接口形状：
 
 - **openai**：`POST {base}/images/edits`，multipart 带两张图，认 b64_json / url / data URL。
 - **dashscope**：阿里云百炼的原生多模态接口，`POST {base}/api/v1/services/aigc/multimodal-generation/generation`，
   JSON 里塞两个 data URL 图 + 文字，回来是一个临时图片链接。
+- **siliconflow**：硅基流动的图片生成接口，`POST {base}/images/generations`，JSON 里
+  `image`（图1人物）+ `image2`（图2衣服）两个 data URL + prompt；回来是临时图片链接。
+  换装要用支持双图的 `Qwen/Qwen-Image-Edit-2509`，它不支持 `image_size`，尺寸跟输入走。
+  平台默认加「AI 生成」显式水印（请求头 X-Enable-Watermark，默认 1），这是合规要求。
 
-`cloud.shape` 默认 `auto`：地址里带 `aliyuncs.com` 就走 dashscope，其余走 openai。
-百炼那条路 2026-10-30 用真 key 跑通过（qwen-image-2.1-pro，换衣服、脸保持不变）；
-openai 那条只验过客户端逻辑（`tools/tests/test_cloud.py` 用假服务器），没花真钱。
+`cloud.shape` 默认 `auto`：地址里带 `aliyuncs.com` 走 dashscope、带 `siliconflow` 走 siliconflow、
+其余走 openai。
+三条路的真实情况：百炼 2026-10-30 真 key 跑通（qwen-image-2.1-pro）；硅基流动 2026-11-05
+真 key 跑通（Qwen-Image-Edit-2509，42 秒一张，约 ¥0.3/张）；openai 那条只验过客户端逻辑
+（`tools/tests/test_cloud.py` 用假服务器）——本机连不上 api.openai.com，没花过真钱。
 
 两个刻意的选择：
 1. 没配好不抛异常，返回 error_kind=auth 的失败结果——上层照常记账，页面会说人话。
@@ -94,9 +100,13 @@ class CloudBackend:
         return bool(self.base_url and self.api_key and self.model)
 
     def resolve_shape(self):
-        if self.shape in ("openai", "dashscope"):
+        if self.shape in ("openai", "dashscope", "siliconflow"):
             return self.shape
-        return "dashscope" if "aliyuncs.com" in self.base_url else "openai"
+        if "aliyuncs.com" in self.base_url:
+            return "dashscope"
+        if "siliconflow" in self.base_url:
+            return "siliconflow"
+        return "openai"
 
     # ---------- 对外 ----------
 
@@ -105,8 +115,11 @@ class CloudBackend:
         if not self.configured:
             return self._fail(t0, req, "auth",
                               "云端后端还没配好：到「设置」里填云端地址、密钥和模型名")
-        if self.resolve_shape() == "dashscope":
+        shape = self.resolve_shape()
+        if shape == "dashscope":
             return self._dashscope(req, t0)
+        if shape == "siliconflow":
+            return self._siliconflow(req, t0)
         return self._openai(req, t0)
 
     # ---------- OpenAI 兼容 ----------
@@ -196,6 +209,58 @@ class CloudBackend:
         if blob is None:
             return self._fail(t0, req, "network", "拿到图片链接但下载失败（链接通常几分钟就过期）")
         return self._done(req, t0, blob, size, "url", resp.get("usage"))
+
+    # ---------- 硅基流动 ----------
+
+    def _siliconflow(self, req, t0):
+        payload = {
+            "model": self.model,
+            "prompt": req.instruction,
+            "image": _data_url(req.person_path),
+            "image2": _data_url(req.garment_path),
+        }
+        if req.negative:
+            payload["negative_prompt"] = req.negative
+
+        r = urllib.request.Request(
+            self.base_url + "/images/generations",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+                # 显式水印，合规基线：平台默认就加，这里写明不靠默认值
+                "X-Enable-Watermark": "1",
+            },
+        )
+        try:
+            resp = json.load(urllib.request.urlopen(r, timeout=self.timeout))
+        except urllib.error.HTTPError as e:
+            raw = e.read().decode("utf-8", "replace")
+            return self._fail(t0, req, HTTP_KINDS.get(e.code, "node_error"),
+                              f"HTTP {e.code}：{_error_text(raw)}")
+        except TimeoutError:
+            return self._fail(t0, req, "timeout", f"等了 {self.timeout} 秒没返回")
+        except urllib.error.URLError as e:
+            return self._fail(t0, req, "network", f"连不上：{e.reason}")
+
+        link = self._first_sf_image(resp)
+        if not link:
+            return self._fail(t0, req, "node_error",
+                              f"响应里没有图：{json.dumps(resp, ensure_ascii=False)[:300]}")
+        blob = self._download(link)
+        if blob is None:
+            return self._fail(t0, req, "network", "拿到图片链接但下载失败（链接通常一小时过期）")
+        return self._done(req, t0, blob, "auto", "url",
+                          {"timings": resp.get("timings"), "seed": resp.get("seed")})
+
+    @staticmethod
+    def _first_sf_image(resp):
+        try:
+            item = resp["images"][0]
+        except (KeyError, IndexError, TypeError):
+            return None
+        url = item.get("url") if isinstance(item, dict) else None
+        return url if isinstance(url, str) and url.startswith("http") else None
 
     @staticmethod
     def _first_image(resp):

@@ -45,6 +45,7 @@
       {
         "cases": "int",
         "cost": "float",
+        "currency": "str",
         "elapsed_s": "float",
         "garments": [
           "str"
@@ -130,6 +131,10 @@
     "shape": {
       "avg_attempts": "float",
       "cases": "int",
+      "cost_by_currency": {
+        "CNY": "float",
+        "USD": "float"
+      },
       "cost_currency": "str",
       "final_pass_rate": "float",
       "first_pass_rate": "float",

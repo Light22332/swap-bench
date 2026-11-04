@@ -22,7 +22,7 @@
 - **不装的**：手指粘连、文字水印判不了就不列；手这一项只数得清"在不在"
 - **看与取**：放好两张图点一下，结果直接铺在右边；按住结果看原片，点开看这张的检验单，「存档」翻以前的单子
 - **证据**：每次尝试一行 JSONL，批次给出合格率、重试次数、失败原因分布
-- **跑在哪**：本地 16GB 显存，零云成本；也能切云端（百炼 `qwen-image-2.1-pro` 已用真 key 跑通，单张约 30 秒）
+- **跑在哪**：本地 16GB 显存，零云成本；也能切云端（百炼 `qwen-image-2.1-pro` 真 key 跑通、单张约 30 秒；硅基流动 `Qwen/Qwen-Image-Edit-2509` 真 key 跑通、单张约 42 秒、约 ¥0.3）
 - **换地址**：右上角「设置」里改本地/云端地址、密钥、模型名，保存即生效，不用重启
 
 **要现场演示？** 五分钟检查清单、三分钟讲法、翻车兜底和常见追问在 [DEMO.md](DEMO.md)；演示前跑一次 `python tools/demo_check.py`。
@@ -396,21 +396,32 @@ python tools/run_batch.py \
 
 - 地址里带 `aliyuncs.com` → 走百炼的原生多模态接口（`/api/v1/services/aigc/multimodal-generation/generation`）。
   两张图以 data URL 塞进 `input.messages`，回来是带过期时间的图片链接，客户端立刻下载落地。
+- 地址里带 `siliconflow` → 走硅基流动的图生成接口（`/images/generations`，JSON 里 `image` 是图1人物、
+  `image2` 是图2衣服，两个 data URL + prompt）。换装要用支持双图的 `Qwen/Qwen-Image-Edit-2509`；
+  它不支持 `image_size`，尺寸跟输入走。平台默认给结果加「AI 生成」显式水印（请求头 `X-Enable-Watermark`
+  默认 1），这是合规要求，不是 bug。
 - 其他地址 → 走 OpenAI 的 `images/edits`（multipart），返回的 `b64_json`、`url`、`data:` URL 三种都认。
 
 实测（2026-10-30，百炼 `qwen-image-2.1-pro`，1024×1024）：一次调用约 30 秒（本地同图 57 秒），
 五项判定全过——人脸 0.87、身体区域变化 60%、两只手 0.98 / 0.99、背景主色距离 11、结果里 1 张脸。
 
+实测（2026-11-05 凌晨，硅基流动 `Qwen/Qwen-Image-Edit-2509`，1024×1024）：单张 42.2 秒、整条管线
+52.9 秒、首轮 5/5 全过，单张约 **¥0.3**；结果右下角带「AI 生成」水印。这次是用真 key 真扣费跑的。
+
 尺寸和单价不在页面上，在 `config.json`：`cloud.size`（留空：百炼按 `1024*1024`，OpenAI 形状按 `1024x1536`）、
 `cloud.price_per_image`（填了就按张记进 `GenResult.cost`）、`cloud.price_currency`（`USD` / `CNY`，决定页面上用哪个符号）。
-要手动指定形状用 `cloud.shape`（`auto` / `openai` / `dashscope`）。
+要手动指定形状用 `cloud.shape`（`auto` / `openai` / `dashscope` / `siliconflow`）。
 
 **花销是算出来的，不是估的：** 每次生成按张数乘单价，记在该次尝试的 JSONL 里，再汇总成这批的
-`total_cost`。右上角常驻一个「已花 $x.xxx」（云端累计，一打开就在），页脚会多一格「这次花的钱」，
+`total_cost`。右上角常驻一个「已花 ¥x.xxx」（云端累计，一打开就在），页脚会多一格「这次花的钱」，
 检验单的技术细节每次生成后面跟单价，「存档」里每个单子带花费、顶上写云端累计。
+**不同币种不混加**：老单子按 USD、新单子按 CNY 各记各的，右上角显示花得最多的那个币种，
+悬停能看到另一种的明细（`另有 $0.035，不同币种分开记`）。
 
 `qwen-image-2.1-pro` 的官方价是 **$0.035333 / 张**（[百炼文档](https://docs.modelstudio.console.alibabacloud.com/en/model-studio/qwen-image-2-1-pro.md)，
-中国区，2026-10-30 查的），`config.json` 里已经按这个数填好了。换模型记得改这两行，不然算出来的价格是旧模型的。
+中国区，2026-10-30 查的），`config.json` 里已经按这个数填好了。硅基流动的 `Qwen/Qwen-Image-Edit-2509`
+按张计费、约 **¥0.3/张**（2026-11-05 查的；它的余额接口已下线，精确扣费以控制台流水为准）。
+换模型或换供应商记得把 `price_per_image` 和 `price_currency` 一起改，不然算出来的价格是旧模型的。
 
 ---
 
@@ -457,7 +468,7 @@ app/
     generate/
       graph.py        把一次请求翻译成 ComfyUI API 图（手写，不用 UI 导出的 JSON）
       comfyui.py      本地后端：提交、轮询、取图、失败分类
-      cloud.py        云端后端：OpenAI images/edits 形态（百炼已用真 key 跑通；OpenAI 那条只用假服务器验过）
+      cloud.py        云端后端：openai / dashscope / siliconflow 三种形状（百炼、硅基流动真 key 跑通；OpenAI 只验过客户端逻辑）
     judge/
       faces.py        人脸检测与特征比对（YuNet + SFace）
       hands.py        手掌检测 + 21 点关键点（MediaPipe 模型，走 OpenCV DNN）
@@ -500,7 +511,7 @@ runs/                 每次任务的 JSONL 检验单
 - **背景检查只对纯色/简洁背景有效。** 背景太杂时取不到背景主色，这一项返回 null，不计入判定。
 - **人像里必须有一张能检测到的脸**，否则"脸没变"这一项无法比对，退化为 3 项判定。
 - **人脸相似度阈值是实测标定的**（好 0.75+，坏 0.00–0.19），换模型或换人群后需要重新标。
-- **云端后端**：百炼那条已经用真 key 跑通（`qwen-image-2.1-pro`）；OpenAI `images/edits` 那条只用假服务器验过客户端逻辑，没花真钱跑过。地址、密钥、模型名在右上角「设置」里填，切后端也在那里。
+- **云端后端**：百炼（`qwen-image-2.1-pro`）和硅基流动（`Qwen/Qwen-Image-Edit-2509`）都用真 key 真扣费跑通过；OpenAI `images/edits` 那条只用假服务器验过客户端逻辑——本机连不上 `api.openai.com`、也没有官方 key。地址、密钥、模型名在右上角「设置」里填，切后端也在那里。
 - **上传的图会先归一化。** 单张上限 30MB；透明底铺白、去 EXIF 元数据、长边超 4096 缩一下、统一成 JPEG 再往下走。手机竖拍照片会按 EXIF 方向转正；iPhone 的 HEIC 要装 `pillow-heif`（`requirements.txt` 里列为可选）才能直接收，不装会提示先导出成 JPG。
 - **页面上显示的是缩略图。** 结果格、看大图、按住对比都走 `/img?w=…&fmt=webp`（一张结果图约 3.6MB → 20KB 左右），只有「保存」和整批下载拿原图。所以看图和存图的画质不一样，这是有意的。
 - **没有专门为手机设计。** 窄屏能看、能点，记录页会把结果排到前面、检验单会滚进视野，但排版仍是桌面优先的。

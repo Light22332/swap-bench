@@ -88,6 +88,22 @@ def main():
         job_end(ts="2026-10-31T12:00:10"),
     ])
     write(tmp, "empty1", [start(ts="2026-10-31T13:00:00")])
+    write(tmp, "usd1", [
+        start(ts="2026-10-30T10:00:00", backend="cloud"),
+        gen(ts="2026-10-30T10:00:05", cost=0.0353),
+        judge(ts="2026-10-30T10:00:09"),
+        job_end(ts="2026-10-30T10:00:10",
+                metrics={"total_generate_s": 40.0, "judge_mode": "rules", "cases": 1,
+                         "total_cost": 0.0353, "cost_currency": "USD"}),
+    ])
+    write(tmp, "cny1", [
+        start(ts="2026-11-05T03:00:00", backend="cloud"),
+        gen(ts="2026-11-05T03:00:05", cost=0.3),
+        judge(ts="2026-11-05T03:00:09"),
+        job_end(ts="2026-11-05T03:00:10",
+                metrics={"total_generate_s": 46.0, "judge_mode": "rules", "cases": 1,
+                         "total_cost": 0.3, "cost_currency": "CNY"}),
+    ])
 
     done = history.load_job("done1")
     check("跑完的单子 state=done", done and done["state"] == "done", str(done and done["state"]))
@@ -122,6 +138,14 @@ def main():
     check("中断单的件数按 generate 算", by_id["half1"]["cases"] == 2, str(by_id["half1"]))
     check("中断单的通过数只算判定过的", by_id["half1"]["passed"] == 0, str(by_id["half1"]))
     check("跑完单的通过数正常", by_id["done1"]["passed"] == 1, str(by_id["done1"]))
+
+    check("存档行带币种", by_id["cny1"].get("currency") == "CNY" and by_id["usd1"].get("currency") == "USD",
+          str([by_id["cny1"].get("currency"), by_id["usd1"].get("currency")]))
+
+    gm = history.global_metrics()
+    check("混币种不直接相加：主币种取花得多的那个", gm["cost_currency"] == "CNY", str(gm))
+    check("主币种金额只算本币种", abs(gm["total_cost"] - 0.3) < 1e-9, str(gm))
+    check("两种币种分开记", gm["cost_by_currency"] == {"CNY": 0.3, "USD": 0.0353}, str(gm))
 
     if FAILED:
         print(f"\n{len(FAILED)} 项失败：{FAILED}")

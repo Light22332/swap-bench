@@ -164,6 +164,7 @@ def list_jobs(limit=60):
             "passed": len(passed),
             "elapsed_s": elapsed,
             "cost": _spent(recs, metrics),
+            "currency": metrics.get("cost_currency") or "USD",
         })
     out.sort(key=lambda j: j["ts"], reverse=True)
     return out[:limit]
@@ -203,9 +204,13 @@ def dump_json(obj):
 
 
 def global_metrics():
-    """扫一遍全部 runs/*.jsonl，给出全站的首轮通过率和平均重试，以及云端累计花了多少。"""
+    """扫一遍全部 runs/*.jsonl，给出全站的首轮通过率和平均重试，以及云端累计花了多少。
+
+    花费按币种分开累计：老单子是 USD（百炼）、新单子是 CNY（硅基流动），
+    两个数直接相加没有意义，所以 total_cost 只给花得最多的那个币种，
+    全部明细放 cost_by_currency。"""
     store = _store()
-    cases, jobs, spent, currency = [], 0, 0.0, "USD"
+    cases, jobs, spent = [], 0, {}
     for jid in store.all_jobs():
         recs = store.read(jid)
         if not recs:
@@ -213,8 +218,10 @@ def global_metrics():
         jobs += 1
         end = next((r for r in recs if r.get("stage") == "job_end"), {})
         metrics = end.get("metrics") or {}
-        spent += _spent(recs, metrics)
-        currency = metrics.get("cost_currency") or currency
+        cur = metrics.get("cost_currency") or "USD"
+        amount = _spent(recs, metrics)
+        if amount:
+            spent[cur] = spent.get(cur, 0.0) + amount
         by_case = {}
         for r in recs:
             if r.get("stage") == "judge":
@@ -229,12 +236,15 @@ def global_metrics():
     first = sum(1 for c in cases if c.get("first_attempt_passed"))
     final = sum(1 for c in cases if c.get("passed"))
     avg_att = (sum(c["attempts"] for c in cases) / total) if total else 0
+    costs = {k: round(v, 4) for k, v in sorted(spent.items()) if round(v, 4)}
+    primary = max(costs, key=costs.get) if costs else "USD"
     return {
         "jobs": jobs,
         "cases": total,
         "first_pass_rate": round(first / total, 3) if total else 0,
         "final_pass_rate": round(final / total, 3) if total else 0,
         "avg_attempts": round(avg_att, 2),
-        "total_cost": round(spent, 4),
-        "cost_currency": currency,
+        "total_cost": costs.get(primary, 0.0),
+        "cost_currency": primary,
+        "cost_by_currency": costs,
     }

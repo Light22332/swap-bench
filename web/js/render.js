@@ -343,7 +343,7 @@ export function renderLedger(items) {
     what.textContent = (j.garments || []).join('、') || '—';
     const small = document.createElement('small');
     small.textContent = `${j.cases} 件 · ${duration(j.elapsed_s)}`
-      + (j.cost ? ` · ${money(j.cost, (S.metrics && S.metrics.cost_currency) || 'USD')}` : '');
+      + (j.cost ? ` · ${money(j.cost, j.currency || (S.metrics && S.metrics.cost_currency) || 'USD')}` : '');
     what.append(small);
 
     const pass = document.createElement('span');

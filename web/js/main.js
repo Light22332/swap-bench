@@ -137,8 +137,11 @@ async function openLedger() {
     S.history = items;
     renderLedger(items);
     const note = $('ledger-note');
+    const other = Object.keys(m.cost_by_currency || {})
+      .filter(k => k !== m.cost_currency && m.cost_by_currency[k])
+      .map(k => money(m.cost_by_currency[k], k)).join(' + ');
     note.textContent = m.total_cost
-      ? `点一行，把那次的结果调出来。全部 ${m.jobs} 单，云端一共花了 ${money(m.total_cost, m.cost_currency)}。`
+      ? `点一行，把那次的结果调出来。全部 ${m.jobs} 单，云端一共花了 ${money(m.total_cost, m.cost_currency)}${other ? `（另有 ${other}）` : ''}。`
       : '点一行，把那次的结果调出来。';
   } catch (e) {
     renderLedger([]);

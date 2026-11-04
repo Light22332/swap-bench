@@ -14,7 +14,10 @@ export async function refreshCostTag() {
     if (m.total_cost) {
       el.hidden = false;
       el.textContent = `已花 ${money(m.total_cost, m.cost_currency)}`;
-      el.title = `云端累计 ${money(m.total_cost, m.cost_currency)}，按 config.json 里的单价算；本地跑不花钱`;
+      const other = Object.keys(m.cost_by_currency || {})
+        .filter(k => k !== m.cost_currency && m.cost_by_currency[k])
+        .map(k => money(m.cost_by_currency[k], k)).join(' + ');
+      el.title = `云端累计 ${money(m.total_cost, m.cost_currency)}${other ? `（另有 ${other}，不同币种分开记）` : ''}，按 config.json 里的单价算；本地跑不花钱`;
     } else {
       el.hidden = true;
     }

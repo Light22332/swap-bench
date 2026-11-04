@@ -496,6 +496,35 @@ README 的回归基线从 8 组更新到 14 组。
 - `bench/` 商品照的版权问题没解决，所以「更真实的那套」永远只能在本地跑。
 - `compare` 还是手动跑，没进 CI；CI 里只跑 `tools/check.py --fast`（不真生成）。
 
+## 云端真钱验：硅基流动（2026-11-05 凌晨）
+
+要什么：审计清单最后一项「云端后端真钱验一次」。原来只有百炼的 dashscope 形状用真 key 跑过；OpenAI
+形状只用假服务器验过客户端逻辑，而本机没有 OpenAI key、`api.openai.com` 也连不上。用户给了一把硅基流动
+的 key（充了 ¥1），先用它把「真钱出图」这件事跑通。
+
+怎么做的三条：
+
+1. 先探形状：硅基流动的图编辑不是 OpenAI 的 `/images/edits`（404），是 `/images/generations` +
+   JSON 里的 `image`/`image2` 两个 data URL（双图只有 `Qwen/Qwen-Image-Edit-2509` 支持），回来是 1 小时过期的链接。
+2. `app/capability/generate/cloud.py` 加第三种形状 `siliconflow`：JSON 请求、双图、`X-Enable-Watermark: 1`
+   显式水印、立刻下载落地；`resolve_shape()` 按地址自动认（`aliyuncs.com`→dashscope、
+   `siliconflow`→siliconflow、其余 openai）。`tools/tests/test_cloud.py` 加 13 项假服务器测试（请求路径、
+   JSON 字段、链接下载、成本、形状判断），全过。
+3. 顺带修了混币种记账：`history.global_metrics()` 原来把所有任务的 `total_cost` 直接相加，老单子是 USD
+   （$0.035333/张）、新单子是 CNY（¥0.3/张），加出来是个假数（$0.335）。改成按币种分开累计、接口多
+   `cost_by_currency`、存档行多 `currency`；右上角显示花得最多的币种，悬停看另一种明细；补了 4 项测试。
+
+实测（真 key、真扣费）：直接调接口单张 42.2 秒（`timings.inference` 40.9）；走完整管线
+（上传 → prep → 生成 → 5 项质检）52.9 秒、首轮 5/5 全过、`total_cost` ¥0.3；结果右下角带平台强制的
+「AI 生成」显式水印（合规要求）。界面右上角显示「已花 ¥0.300」，检验单写「本次 ¥0.300」。
+
+留下的问题：
+
+- OpenAI `images/edits` 形状仍然只有假服务器验证：没有官方 key，而且这台机器直连 `api.openai.com`
+  1.4 秒 SSL 断连。要验得靠代理或国内兼容服务。
+- 硅基流动的余额接口已下线（`/user/info` 返回 410），精确扣费只能看控制台流水；账户剩约 ¥0.1，够再跑零次。
+- 提交里的 `config.local.json` 带 SF key（被 gitignore + pre-commit 钩子挡着）；换机器要重新配。
+
 ## 明确不做
 
 - **换脸**：目标是服装迁移，不是把人脸换上去
@@ -506,7 +535,8 @@ README 的回归基线从 8 组更新到 14 组。
 
 ## 下一步
 
-到 2026-10-31，这份文件里列的 P0/P1/P2 都做完了，只剩两件不划算的（nsis 安装包、OpenAI 形状的云端没花真钱验）。
+到 2026-11-05，这份文件里列的 P0/P1/P2 都做完了。云端真钱验已经用硅基流动（第三种形状）跑通，
+OpenAI `images/edits` 形状仍缺真 key（本机还连不上 api.openai.com）；真机手机也还没点过。
 现在的重点从「加功能」转到「面试能讲清楚、现场演示不翻车」：把演示话术、案例说明和作品集准备好，
 演示前跑一次 `预热.bat`、确认 `tools/check.py` 全绿。
 
