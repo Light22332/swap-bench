@@ -17,6 +17,6 @@
 
 实测这一组跑得通：人脸相似度 0.85、身体区域变化 79%、两只手都在（复核 0.92 / 0.99）、背景主色距离 9，五项全过，一次出图 56 秒。
 
-回归基线用的那 8 组图不在这里，也不随仓库分发，见 `../bench/README.md`。
+这十二组（两个人像 × 六件衣服）同时是公开回归集：`python tools/regression.py run --set samples --out reports/samples.json`，克隆下来就能复跑，基线数字在 `reports/samples.json`；`bench/` 里那套商品照不随仓库分发，见 `../bench/README.md`。
 
 `_raw/` 是生成时的原图（PNG），已被 gitignore；转成 JPEG 是为了让仓库小一点。

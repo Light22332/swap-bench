@@ -33,12 +33,11 @@
 
 ## 现在的状态
 
-57 个提交，和 origin 同步。已完成：本地串行队列、云端接百炼、设置抽屉、花费统计、界面简化（两个槽一个按钮）、点开看大图、从照片里提取衣服、README 配图换成现在这版界面（网页 + 桌面 + 检验单 + 22 秒演示动图）、手机照片直接可用（EXIF 方向转正 + HEIC 可选转换 + 上传归一化）、结果图缩略图（页面流量 7.3MB → 129KB）与拖拽/失败文案/状态条那批修补、窄屏与交互修补（记录页先出图、检验单滚进视野、Esc/细节保留、对比度过 4.5、Ctrl+V、排队取消真生效）、磁盘清理（`tools/clean.py`，当前仓库可清 265 个文件 259.9MB）与中断任务终态（done/cancelled/interrupted）、ComfyUI 轮询容错（连续失败 5 次才放弃）与请求体上限（>64MB 直接 413）、一次判定只解两次图 + 云端并发上限 + 模型线程锁 + 日志（`runs/server.log`）、大图解析只看长边 1024（4096 原图峰值内存降 2.9 倍）与 prep 设备跟配置走 + 页面只留当前这批（整批下载对得上）、接口参数校验与畸形请求处理（类型错/坏 Content-Length/非 JSON 回 400，不再 500 或挂死）+ 文档 20 条校准（README/models/ENGINEERING/PLAN/HANDOFF/ROADMAP）。、现场演示包（`DEMO.md` + `tools/demo_check.py` + 重拍 `outputs/page.png`/`docket.png`/`demo.gif`/`electron-window.png`）、手部弱项实验（回归 8→14 组 + 逐次尝试归因 + 提示词对照：尝试级手部失败 54% → 20%，默认指令已更新）、Windows 安装包（`dist/SwapBench-0.1.0-setup.exe`，静默安装/启动烟测/卸载都验过：装完 270MB，卸载后目录和桌面、开始菜单快捷方式全清）。
+58 个提交。已完成：本地串行队列、云端接百炼、设置抽屉、花费统计、界面简化（两个槽一个按钮）、点开看大图、从照片里提取衣服、README 配图换成现在这版界面（网页 + 桌面 + 检验单 + 22 秒演示动图）、手机照片直接可用（EXIF 方向转正 + HEIC 可选转换 + 上传归一化）、结果图缩略图（页面流量 7.3MB → 129KB）与拖拽/失败文案/状态条那批修补、窄屏与交互修补（记录页先出图、检验单滚进视野、Esc/细节保留、对比度过 4.5、Ctrl+V、排队取消真生效）、磁盘清理（`tools/clean.py`，当前仓库可清 265 个文件 259.9MB）与中断任务终态（done/cancelled/interrupted）、ComfyUI 轮询容错（连续失败 5 次才放弃）与请求体上限（>64MB 直接 413）、一次判定只解两次图 + 云端并发上限 + 模型线程锁 + 日志（`runs/server.log`）、大图解析只看长边 1024（4096 原图峰值内存降 2.9 倍）与 prep 设备跟配置走 + 页面只留当前这批（整批下载对得上）、接口参数校验与畸形请求处理（类型错/坏 Content-Length/非 JSON 回 400，不再 500 或挂死）+ 文档 20 条校准（README/models/ENGINEERING/PLAN/HANDOFF/ROADMAP）。、现场演示包（`DEMO.md` + `tools/demo_check.py` + 重拍 `outputs/page.png`/`docket.png`/`demo.gif`/`electron-window.png`）、手部弱项实验（回归 8→14 组 + 逐次尝试归因 + 提示词对照：尝试级手部失败 54% → 20%，默认指令已更新）、Windows 安装包（`dist/SwapBench-0.1.0-setup.exe`，静默安装/启动烟测/卸载都验过：装完 270MB，卸载后目录和桌面、开始菜单快捷方式全清）、回归样本入仓（`tools/regression.py --set samples` 公开 12 组、克隆即跑，公开基线 `reports/samples.json`：12/12 过、首轮 100%、59.6 秒）。
 
 没做的还剩几件，都在 `ROADMAP.md` 末尾：
 
 - **OpenAI 形状的云端**：只用本地假服务器验过客户端逻辑，没花真钱跑过；
-- **回归样本入仓**：`bench/` 还在 `.gitignore` 里，别人 clone 下来只能跑 `samples/` 那 4 组；
 - **真机手机**：只按 390 宽模拟过，没在真手机上点过。
 
 ## 机器上的东西不要重复写

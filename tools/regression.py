@@ -1,12 +1,20 @@
-"""回归基线：固定十四组输入跑一遍，把数字存下来，改代码前后一比就知道有没有变差。
+"""回归基线：固定输入跑一遍，把数字存下来，改代码前后一比就知道有没有变差。
 
 生成是随机的，所以比的是分布不是像素：合格率、首轮通过率、平均重试、每项检查的
 通过率、人脸相似度分布。同一条代码连跑两次也会有小幅波动，看的是"有没有明显掉"。
 
-  python tools/regression.py run --out reports/hand-base.json
-  python tools/regression.py compare reports/hand-base.json reports/after.json
+输入分两套：
 
-跑一组要一两分钟（要真生成），十四组半小时上下。跑到一半断了就重跑，
+- `--set samples`：仓库自带的两个人像 × 六件衣服 = 12 组，克隆下来就能跑
+  （`samples/` 里的图是本地模型生成的，版权干净）；公开基线存 `reports/samples.json`。
+- `--set bench`：`bench/` 里两个人像 × 五件衣服 = 10 组，商品照不随仓库分发，
+  只在本地有图时能跑；本地完整基线存 `reports/hand-base.json`。
+- 默认 `--set all`：两套都跑，本地缺 `bench/` 的组会自动跳过（克隆下来默认只会跑 12 组）。
+
+  python tools/regression.py run --set samples --out reports/samples.json
+  python tools/regression.py compare reports/samples.json reports/after.json
+
+跑一组要一两分钟（要真生成），12 组二十来分钟、22 组半小时上下。跑到一半断了就重跑，
 已经跑过的组会复用同一个 job 记录里的结果——但简单起见这里不做断点续跑。
 """
 import argparse
@@ -20,8 +28,24 @@ import urllib.request
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HOST = "http://127.0.0.1:8770"
 
-PAIRS = [
-    # bench/：两个人的五件衣服（不进仓库，见 bench/README.md）
+SAMPLE_PAIRS = [
+    # samples/：仓库自带的两个人像 × 六件衣服，克隆下来也能复跑（公开基线）
+    ("samples/demo_person_a.jpg", "samples/demo_garment_1.jpg"),
+    ("samples/demo_person_a.jpg", "samples/demo_garment_2.jpg"),
+    ("samples/demo_person_a.jpg", "samples/demo_garment_3.jpg"),
+    ("samples/demo_person_a.jpg", "samples/demo_garment_4.jpg"),
+    ("samples/demo_person_a.jpg", "samples/demo_garment_5.jpg"),
+    ("samples/demo_person_a.jpg", "samples/demo_garment_6.jpg"),
+    ("samples/demo_person_b.jpg", "samples/demo_garment_1.jpg"),
+    ("samples/demo_person_b.jpg", "samples/demo_garment_2.jpg"),
+    ("samples/demo_person_b.jpg", "samples/demo_garment_3.jpg"),
+    ("samples/demo_person_b.jpg", "samples/demo_garment_4.jpg"),
+    ("samples/demo_person_b.jpg", "samples/demo_garment_5.jpg"),
+    ("samples/demo_person_b.jpg", "samples/demo_garment_6.jpg"),
+]
+
+BENCH_PAIRS = [
+    # bench/：两个人的五件衣服（商品照，不进仓库，见 bench/README.md；没有就自动跳过）
     ("bench/case1_person.jpg", "bench/case1_garment.jpg"),
     ("bench/case1_person.jpg", "bench/case2_garment.jpg"),
     ("bench/case1_person.jpg", "bench/case3_garment.jpg"),
@@ -32,11 +56,6 @@ PAIRS = [
     ("bench/case4_person.png", "bench/case3_garment.jpg"),
     ("bench/case4_person.png", "bench/case4_garment.jpg"),
     ("bench/case4_person.png", "bench/case4_garment_crop.jpg"),
-    # samples/：仓库自带的两个人像 × 两件衣服，别人克隆下来也能复跑
-    ("samples/demo_person_a.jpg", "samples/demo_garment_1.jpg"),
-    ("samples/demo_person_a.jpg", "samples/demo_garment_2.jpg"),
-    ("samples/demo_person_b.jpg", "samples/demo_garment_1.jpg"),
-    ("samples/demo_person_b.jpg", "samples/demo_garment_2.jpg"),
 ]
 
 
@@ -128,6 +147,24 @@ def save(out, rows):
     return report
 
 
+def selected_pairs(which):
+    if which == "samples":
+        return list(SAMPLE_PAIRS)
+    if which == "bench":
+        return list(BENCH_PAIRS)
+    return list(SAMPLE_PAIRS) + list(BENCH_PAIRS)
+
+
+def drop_missing(pairs):
+    kept, missing = [], []
+    for person, garment in pairs:
+        ok = all(os.path.isfile(os.path.join(ROOT, p)) for p in (person, garment))
+        (kept if ok else missing).append((person, garment))
+    for person, garment in missing:
+        print(f"跳过（本地没有）：{person} + {garment}", flush=True)
+    return kept
+
+
 def cmd_run(args):
     out = args.out
     if not os.path.isabs(out):
@@ -142,15 +179,21 @@ def cmd_run(args):
         done = {(r["person"], r["garment"]) for r in rows}
         print(f"接着上次跑：已有 {len(rows)} 组")
 
-    pairs = PAIRS
+    pairs = selected_pairs(args.set)
     if args.only:
-        pairs = [p for p in PAIRS if args.only in p[0] or args.only in p[1]]
+        pairs = [p for p in pairs if args.only in p[0] or args.only in p[1]]
         print(f"只跑匹配 {args.only!r} 的 {len(pairs)} 组", flush=True)
+    pairs = drop_missing(pairs)
+    if not pairs:
+        print("没有可跑的组：samples/ 缺图的话先检查仓库是否完整", flush=True)
+        return 1
+    total = len(pairs)
+    print(f"共 {total} 组（--set {args.set}）", flush=True)
     for i, (person, garment) in enumerate(pairs, 1):
         if (person, garment) in done:
-            print(f"[{i}/{len(PAIRS)}] {person} + {garment} 已有，跳过", flush=True)
+            print(f"[{i}/{total}] {person} + {garment} 已有，跳过", flush=True)
             continue
-        print(f"[{i}/{len(PAIRS)}] {person} + {garment} …", flush=True)
+        print(f"[{i}/{total}] {person} + {garment} …", flush=True)
         try:
             row = one_pair(person, garment)
         except Exception as e:
@@ -209,6 +252,8 @@ def main():
     r.add_argument("--out", default="reports/regression.json")
     r.add_argument("--resume", action="store_true", help="接着上次的报告跑，跳过已完成的那几组")
     r.add_argument("--only", default=None, help="只跑路径里含这个字符串的组（调试手部失败时用）")
+    r.add_argument("--set", default="all", choices=("all", "samples", "bench"),
+                   help="跑哪套输入：samples=仓库自带 12 组（默认 all，本地没有 bench/ 时自动跳过）")
     c = sub.add_parser("compare", help="两份报告对比")
     c.add_argument("before")
     c.add_argument("after")

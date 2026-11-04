@@ -179,8 +179,24 @@
 判定门槛：固定比例框切掉的衣服像素 ≤5% 时，说明这是标准商品图排版，用它；否则用衣服框。
 解析一次 0.4–0.6 秒（CPU）。手机原图再大也不会整张喂模型：长边先缩到 1024，解析完把框和掩码按原图坐标给回去（4096 的图上解析 0.7 秒、峰值内存比原来少 2.9 倍）。
 
-十四组固定输入的回归基线（`tools/regression.py`，2026-11-04，`reports/hand-base.json`；
-bench 两人像 × 五件衣服 + samples 两人像 × 两件衣服，bench 的输入不随仓库分发）：
+回归有公开的一套：`samples/` 里两个人像 × 六件衣服，克隆下来就能跑
+（`python tools/regression.py run --set samples --out reports/samples.json`，2026-11-04，
+`reports/samples.json`）：
+
+| 指标 | 值 |
+|---|---|
+| 合格率 | 12/12 = 100% |
+| 首轮通过 | 12/12 = 100% |
+| 平均重试 | 1.00 次 |
+| 平均耗时 | 59.6 秒 |
+| 人脸相似度 | 0.795 – 0.923 |
+| 每项检查通过率 | 五项全 100% |
+
+这套图是模型自己生成的、构图干净，数字比真实商品照好看；它的用途是「改完代码有没有把东西改坏」，
+不是对外宣称合格率。
+
+本地那套更接近真实（`bench/` 商品照，不随仓库分发）——十四组固定输入，2026-11-04，
+`reports/hand-base.json`（bench 两人像 × 五件衣服 + samples 两人像 × 两件衣服）：
 
 | 指标 | 值 |
 |---|---|
@@ -463,7 +479,7 @@ electron/
 web/                  index.html + css/ 八个文件 + js/ 十个原生 ES 模块，无框架、无构建
 models/               人脸两个 onnx + 手部两个 onnx + segformer_b2_clothes/（都不进版本库）
 samples/              八张示例图，随仓库分发（本地模型生成）
-bench/                回归用的八组固定输入（不进版本库，见 bench/README.md）
+bench/                 回归用的十组固定输入（不进版本库，见 bench/README.md；公开 12 组在 samples/）
 tools/                check.py（一键检查）、replay.py（历史回放）、api_baseline.py（接口形状对比）、warmup.py（预热）、run_batch.py（命令行批量）
 runs/                 每次任务的 JSONL 检验单
 启动换装台.exe        双击启动（无黑窗口）

@@ -1,0 +1,574 @@
+{
+  "when": "2026-11-04T20:21:43",
+  "pairs": [
+    {
+      "person": "samples/demo_person_a.jpg",
+      "garment": "samples/demo_garment_1.jpg",
+      "job": "57c3600d98e2",
+      "state": "passed",
+      "passed": true,
+      "score": 1.0,
+      "attempts": 1,
+      "elapsed_s": 84.2,
+      "checks": {
+        "face_preserved": true,
+        "no_extra_person": true,
+        "garment_applied": true,
+        "hand_preserved": true,
+        "background_preserved": true
+      },
+      "checks_detail": {
+        "face_preserved": {
+          "pass": true,
+          "reason": "人脸相似度 0.83（阈值 0.45）",
+          "sim": 0.827
+        },
+        "no_extra_person": {
+          "pass": true,
+          "reason": "结果里 1 张脸"
+        },
+        "garment_applied": {
+          "pass": true,
+          "reason": "身体区域变化 71%"
+        },
+        "hand_preserved": {
+          "pass": true,
+          "reason": "原图 2 只手，结果 2 只（复核置信度 0.95 / 0.99）"
+        },
+        "background_preserved": {
+          "pass": true,
+          "reason": "背景主色距离 12（阈值 30）"
+        }
+      },
+      "hand": {
+        "pass": true,
+        "reason": "原图 2 只手，结果 2 只（复核置信度 0.95 / 0.99）"
+      },
+      "face_sim": 0.827
+    },
+    {
+      "person": "samples/demo_person_a.jpg",
+      "garment": "samples/demo_garment_2.jpg",
+      "job": "d31823dda73e",
+      "state": "passed",
+      "passed": true,
+      "score": 1.0,
+      "attempts": 1,
+      "elapsed_s": 55.5,
+      "checks": {
+        "face_preserved": true,
+        "no_extra_person": true,
+        "garment_applied": true,
+        "hand_preserved": true,
+        "background_preserved": true
+      },
+      "checks_detail": {
+        "face_preserved": {
+          "pass": true,
+          "reason": "人脸相似度 0.83（阈值 0.45）",
+          "sim": 0.829
+        },
+        "no_extra_person": {
+          "pass": true,
+          "reason": "结果里 1 张脸"
+        },
+        "garment_applied": {
+          "pass": true,
+          "reason": "身体区域变化 59%"
+        },
+        "hand_preserved": {
+          "pass": true,
+          "reason": "原图 2 只手，结果 2 只（复核置信度 0.96 / 0.96）"
+        },
+        "background_preserved": {
+          "pass": true,
+          "reason": "背景主色距离 2（阈值 30）"
+        }
+      },
+      "hand": {
+        "pass": true,
+        "reason": "原图 2 只手，结果 2 只（复核置信度 0.96 / 0.96）"
+      },
+      "face_sim": 0.829
+    },
+    {
+      "person": "samples/demo_person_a.jpg",
+      "garment": "samples/demo_garment_3.jpg",
+      "job": "f6c0c06d76b6",
+      "state": "passed",
+      "passed": true,
+      "score": 1.0,
+      "attempts": 1,
+      "elapsed_s": 57.7,
+      "checks": {
+        "face_preserved": true,
+        "no_extra_person": true,
+        "garment_applied": true,
+        "hand_preserved": true,
+        "background_preserved": true
+      },
+      "checks_detail": {
+        "face_preserved": {
+          "pass": true,
+          "reason": "人脸相似度 0.92（阈值 0.45）",
+          "sim": 0.923
+        },
+        "no_extra_person": {
+          "pass": true,
+          "reason": "结果里 1 张脸"
+        },
+        "garment_applied": {
+          "pass": true,
+          "reason": "身体区域变化 64%"
+        },
+        "hand_preserved": {
+          "pass": true,
+          "reason": "原图 2 只手，结果 2 只（复核置信度 0.97 / 0.99）"
+        },
+        "background_preserved": {
+          "pass": true,
+          "reason": "背景主色距离 17（阈值 30）"
+        }
+      },
+      "hand": {
+        "pass": true,
+        "reason": "原图 2 只手，结果 2 只（复核置信度 0.97 / 0.99）"
+      },
+      "face_sim": 0.923
+    },
+    {
+      "person": "samples/demo_person_a.jpg",
+      "garment": "samples/demo_garment_4.jpg",
+      "job": "ccfc9778b2ff",
+      "state": "passed",
+      "passed": true,
+      "score": 1.0,
+      "attempts": 1,
+      "elapsed_s": 57.5,
+      "checks": {
+        "face_preserved": true,
+        "no_extra_person": true,
+        "garment_applied": true,
+        "hand_preserved": true,
+        "background_preserved": true
+      },
+      "checks_detail": {
+        "face_preserved": {
+          "pass": true,
+          "reason": "人脸相似度 0.86（阈值 0.45）",
+          "sim": 0.859
+        },
+        "no_extra_person": {
+          "pass": true,
+          "reason": "结果里 1 张脸"
+        },
+        "garment_applied": {
+          "pass": true,
+          "reason": "身体区域变化 73%"
+        },
+        "hand_preserved": {
+          "pass": true,
+          "reason": "原图 2 只手，结果 2 只（复核置信度 0.96 / 0.96）"
+        },
+        "background_preserved": {
+          "pass": true,
+          "reason": "背景主色距离 8（阈值 30）"
+        }
+      },
+      "hand": {
+        "pass": true,
+        "reason": "原图 2 只手，结果 2 只（复核置信度 0.96 / 0.96）"
+      },
+      "face_sim": 0.859
+    },
+    {
+      "person": "samples/demo_person_a.jpg",
+      "garment": "samples/demo_garment_5.jpg",
+      "job": "29a1be6d96c0",
+      "state": "passed",
+      "passed": true,
+      "score": 1.0,
+      "attempts": 1,
+      "elapsed_s": 57.6,
+      "checks": {
+        "face_preserved": true,
+        "no_extra_person": true,
+        "garment_applied": true,
+        "hand_preserved": true,
+        "background_preserved": true
+      },
+      "checks_detail": {
+        "face_preserved": {
+          "pass": true,
+          "reason": "人脸相似度 0.79（阈值 0.45）",
+          "sim": 0.795
+        },
+        "no_extra_person": {
+          "pass": true,
+          "reason": "结果里 1 张脸"
+        },
+        "garment_applied": {
+          "pass": true,
+          "reason": "身体区域变化 55%"
+        },
+        "hand_preserved": {
+          "pass": true,
+          "reason": "原图 2 只手，结果 2 只（复核置信度 0.97 / 0.98）"
+        },
+        "background_preserved": {
+          "pass": true,
+          "reason": "背景主色距离 2（阈值 30）"
+        }
+      },
+      "hand": {
+        "pass": true,
+        "reason": "原图 2 只手，结果 2 只（复核置信度 0.97 / 0.98）"
+      },
+      "face_sim": 0.795
+    },
+    {
+      "person": "samples/demo_person_a.jpg",
+      "garment": "samples/demo_garment_6.jpg",
+      "job": "896a024286d6",
+      "state": "passed",
+      "passed": true,
+      "score": 1.0,
+      "attempts": 1,
+      "elapsed_s": 57.5,
+      "checks": {
+        "face_preserved": true,
+        "no_extra_person": true,
+        "garment_applied": true,
+        "hand_preserved": true,
+        "background_preserved": true
+      },
+      "checks_detail": {
+        "face_preserved": {
+          "pass": true,
+          "reason": "人脸相似度 0.84（阈值 0.45）",
+          "sim": 0.837
+        },
+        "no_extra_person": {
+          "pass": true,
+          "reason": "结果里 1 张脸"
+        },
+        "garment_applied": {
+          "pass": true,
+          "reason": "身体区域变化 64%"
+        },
+        "hand_preserved": {
+          "pass": true,
+          "reason": "原图 2 只手，结果 2 只（复核置信度 0.98 / 0.98）"
+        },
+        "background_preserved": {
+          "pass": true,
+          "reason": "背景主色距离 7（阈值 30）"
+        }
+      },
+      "hand": {
+        "pass": true,
+        "reason": "原图 2 只手，结果 2 只（复核置信度 0.98 / 0.98）"
+      },
+      "face_sim": 0.837
+    },
+    {
+      "person": "samples/demo_person_b.jpg",
+      "garment": "samples/demo_garment_1.jpg",
+      "job": "0a12407f79ac",
+      "state": "passed",
+      "passed": true,
+      "score": 1.0,
+      "attempts": 1,
+      "elapsed_s": 57.6,
+      "checks": {
+        "face_preserved": true,
+        "no_extra_person": true,
+        "garment_applied": true,
+        "hand_preserved": true,
+        "background_preserved": true
+      },
+      "checks_detail": {
+        "face_preserved": {
+          "pass": true,
+          "reason": "人脸相似度 0.90（阈值 0.45）",
+          "sim": 0.901
+        },
+        "no_extra_person": {
+          "pass": true,
+          "reason": "结果里 1 张脸"
+        },
+        "garment_applied": {
+          "pass": true,
+          "reason": "身体区域变化 62%"
+        },
+        "hand_preserved": {
+          "pass": true,
+          "reason": "原图 2 只手，结果 2 只（复核置信度 0.99 / 0.99）"
+        },
+        "background_preserved": {
+          "pass": true,
+          "reason": "背景主色距离 1（阈值 30）"
+        }
+      },
+      "hand": {
+        "pass": true,
+        "reason": "原图 2 只手，结果 2 只（复核置信度 0.99 / 0.99）"
+      },
+      "face_sim": 0.901
+    },
+    {
+      "person": "samples/demo_person_b.jpg",
+      "garment": "samples/demo_garment_2.jpg",
+      "job": "c3769ee30920",
+      "state": "passed",
+      "passed": true,
+      "score": 1.0,
+      "attempts": 1,
+      "elapsed_s": 57.6,
+      "checks": {
+        "face_preserved": true,
+        "no_extra_person": true,
+        "garment_applied": true,
+        "hand_preserved": true,
+        "background_preserved": true
+      },
+      "checks_detail": {
+        "face_preserved": {
+          "pass": true,
+          "reason": "人脸相似度 0.88（阈值 0.45）",
+          "sim": 0.876
+        },
+        "no_extra_person": {
+          "pass": true,
+          "reason": "结果里 1 张脸"
+        },
+        "garment_applied": {
+          "pass": true,
+          "reason": "身体区域变化 56%"
+        },
+        "hand_preserved": {
+          "pass": true,
+          "reason": "原图 2 只手，结果 2 只（复核置信度 0.99 / 0.99）"
+        },
+        "background_preserved": {
+          "pass": true,
+          "reason": "背景主色距离 2（阈值 30）"
+        }
+      },
+      "hand": {
+        "pass": true,
+        "reason": "原图 2 只手，结果 2 只（复核置信度 0.99 / 0.99）"
+      },
+      "face_sim": 0.876
+    },
+    {
+      "person": "samples/demo_person_b.jpg",
+      "garment": "samples/demo_garment_3.jpg",
+      "job": "013e7469a5bc",
+      "state": "passed",
+      "passed": true,
+      "score": 1.0,
+      "attempts": 1,
+      "elapsed_s": 57.6,
+      "checks": {
+        "face_preserved": true,
+        "no_extra_person": true,
+        "garment_applied": true,
+        "hand_preserved": true,
+        "background_preserved": true
+      },
+      "checks_detail": {
+        "face_preserved": {
+          "pass": true,
+          "reason": "人脸相似度 0.89（阈值 0.45）",
+          "sim": 0.886
+        },
+        "no_extra_person": {
+          "pass": true,
+          "reason": "结果里 1 张脸"
+        },
+        "garment_applied": {
+          "pass": true,
+          "reason": "身体区域变化 62%"
+        },
+        "hand_preserved": {
+          "pass": true,
+          "reason": "原图 2 只手，结果 2 只（复核置信度 0.99 / 0.99）"
+        },
+        "background_preserved": {
+          "pass": true,
+          "reason": "背景主色距离 2（阈值 30）"
+        }
+      },
+      "hand": {
+        "pass": true,
+        "reason": "原图 2 只手，结果 2 只（复核置信度 0.99 / 0.99）"
+      },
+      "face_sim": 0.886
+    },
+    {
+      "person": "samples/demo_person_b.jpg",
+      "garment": "samples/demo_garment_4.jpg",
+      "job": "8133c48dd167",
+      "state": "passed",
+      "passed": true,
+      "score": 1.0,
+      "attempts": 1,
+      "elapsed_s": 57.4,
+      "checks": {
+        "face_preserved": true,
+        "no_extra_person": true,
+        "garment_applied": true,
+        "hand_preserved": true,
+        "background_preserved": true
+      },
+      "checks_detail": {
+        "face_preserved": {
+          "pass": true,
+          "reason": "人脸相似度 0.84（阈值 0.45）",
+          "sim": 0.845
+        },
+        "no_extra_person": {
+          "pass": true,
+          "reason": "结果里 1 张脸"
+        },
+        "garment_applied": {
+          "pass": true,
+          "reason": "身体区域变化 64%"
+        },
+        "hand_preserved": {
+          "pass": true,
+          "reason": "原图 2 只手，结果 2 只（复核置信度 0.98 / 0.98）"
+        },
+        "background_preserved": {
+          "pass": true,
+          "reason": "背景主色距离 2（阈值 30）"
+        }
+      },
+      "hand": {
+        "pass": true,
+        "reason": "原图 2 只手，结果 2 只（复核置信度 0.98 / 0.98）"
+      },
+      "face_sim": 0.845
+    },
+    {
+      "person": "samples/demo_person_b.jpg",
+      "garment": "samples/demo_garment_5.jpg",
+      "job": "3c112e3d36ed",
+      "state": "passed",
+      "passed": true,
+      "score": 1.0,
+      "attempts": 1,
+      "elapsed_s": 57.6,
+      "checks": {
+        "face_preserved": true,
+        "no_extra_person": true,
+        "garment_applied": true,
+        "hand_preserved": true,
+        "background_preserved": true
+      },
+      "checks_detail": {
+        "face_preserved": {
+          "pass": true,
+          "reason": "人脸相似度 0.87（阈值 0.45）",
+          "sim": 0.868
+        },
+        "no_extra_person": {
+          "pass": true,
+          "reason": "结果里 1 张脸"
+        },
+        "garment_applied": {
+          "pass": true,
+          "reason": "身体区域变化 52%"
+        },
+        "hand_preserved": {
+          "pass": true,
+          "reason": "原图 2 只手，结果 2 只（复核置信度 0.99 / 0.99）"
+        },
+        "background_preserved": {
+          "pass": true,
+          "reason": "背景主色距离 3（阈值 30）"
+        }
+      },
+      "hand": {
+        "pass": true,
+        "reason": "原图 2 只手，结果 2 只（复核置信度 0.99 / 0.99）"
+      },
+      "face_sim": 0.868
+    },
+    {
+      "person": "samples/demo_person_b.jpg",
+      "garment": "samples/demo_garment_6.jpg",
+      "job": "6e5eb5882092",
+      "state": "passed",
+      "passed": true,
+      "score": 1.0,
+      "attempts": 1,
+      "elapsed_s": 57.5,
+      "checks": {
+        "face_preserved": true,
+        "no_extra_person": true,
+        "garment_applied": true,
+        "hand_preserved": true,
+        "background_preserved": true
+      },
+      "checks_detail": {
+        "face_preserved": {
+          "pass": true,
+          "reason": "人脸相似度 0.88（阈值 0.45）",
+          "sim": 0.885
+        },
+        "no_extra_person": {
+          "pass": true,
+          "reason": "结果里 1 张脸"
+        },
+        "garment_applied": {
+          "pass": true,
+          "reason": "身体区域变化 61%"
+        },
+        "hand_preserved": {
+          "pass": true,
+          "reason": "原图 2 只手，结果 2 只（复核置信度 0.99 / 0.98）"
+        },
+        "background_preserved": {
+          "pass": true,
+          "reason": "背景主色距离 1（阈值 30）"
+        }
+      },
+      "hand": {
+        "pass": true,
+        "reason": "原图 2 只手，结果 2 只（复核置信度 0.99 / 0.98）"
+      },
+      "face_sim": 0.885
+    }
+  ],
+  "summary": {
+    "cases": 12,
+    "pass_rate": 1.0,
+    "first_pass_rate": 1.0,
+    "avg_attempts": 1.0,
+    "avg_elapsed_s": 59.6,
+    "per_check_pass_rate": {
+      "background_preserved": 1.0,
+      "face_preserved": 1.0,
+      "garment_applied": 1.0,
+      "hand_preserved": 1.0,
+      "no_extra_person": 1.0
+    },
+    "hand_fail_kinds": {},
+    "face_sim": [
+      0.795,
+      0.827,
+      0.829,
+      0.837,
+      0.845,
+      0.859,
+      0.868,
+      0.876,
+      0.885,
+      0.886,
+      0.901,
+      0.923
+    ]
+  }
+}
