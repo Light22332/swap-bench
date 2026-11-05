@@ -29,6 +29,7 @@ def check(name, cond, detail=""):
 
 class FakeBackend:
     name = "fake"
+    cost = 0.0
 
     def __init__(self):
         self.requests = []
@@ -37,7 +38,8 @@ class FakeBackend:
         self.requests.append(req)
         n = len(self.requests)
         return GenResult(ok=True, image_path=f"/tmp/fake_{n}.png", backend="fake",
-                         model="fake-model", latency_s=1.0, seed=1000 + n)
+                         model="fake-model", latency_s=1.0, seed=1000 + n,
+                         cost=self.cost)
 
 
 def make_judge(verdicts):
@@ -146,6 +148,68 @@ job = new_job("person.png", [{"name": "g.jpg", "path": "g.jpg"}], BASE, "", conf
 runner.run_job(job, config)
 check("crop_garment 用配置里的 cuda", seen.get("device") == "cuda", str(seen))
 check("裁剪模式还是 parse", seen.get("mode") == "parse", str(seen))
+
+print("7) cloud_fallback：本地全不过才让云端补一次")
+local = FakeBackend()
+cloud = FakeBackend()
+cloud.name = "cloud"
+cloud.configured = True
+cloud.cost = 0.3
+calls = []
+
+
+def factory(kind, config):
+    calls.append(kind)
+    return cloud if kind == "cloud" else local
+
+
+runner.make_backend = factory
+runner.make_judge = lambda *a, **k: make_judge(
+    [(False, ["garment_applied"])] * 3 + [(True, [])])
+tmp = tempfile.mkdtemp()
+config = {
+    "backend": "fake",
+    "prep": {"enabled": False},
+    "sampling": {"cfg": 1.0, "steps": 40, "resolution": 1024},
+    "pipeline": {"max_attempts": 2, "escape_attempts": 1, "escape_cfg": 2.0,
+                 "cloud_fallback": True},
+    "cloud": {"price_per_image": 0.3, "price_currency": "CNY"},
+    "paths": {"runs": os.path.join(tmp, "runs"), "outputs": os.path.join(tmp, "out")},
+}
+job = new_job("person.png", [{"name": "g.jpg", "path": "g.jpg"}], BASE, "", config)
+runner.run_job(job, config)
+recs = Store(config["paths"]["runs"]).read(job.id)
+check("本地跑满 3 次", len(local.requests) == 3, str(len(local.requests)))
+check("云端补 1 次", len(cloud.requests) == 1, str(len(cloud.requests)))
+modes = [r.get("mode") for r in recs if r.get("stage") == "generate"]
+check("最后一次标 cloud-fallback", modes[-1] == "cloud-fallback", str(modes))
+check("云端那次带 cost", any(r.get("cost") == 0.3 for r in recs
+                             if r.get("stage") == "generate"), str(modes))
+check("云端过了，案例 passed", job.cases[0]["state"] == "passed", job.cases[0]["state"])
+check("指标记了云端次数", job.metrics.get("cloud_attempts") == 1,
+      str(job.metrics.get("cloud_attempts")))
+check("总花费算进云端", job.metrics.get("total_cost") == 0.3,
+      str(job.metrics.get("total_cost")))
+
+print("8) cloud_fallback 关掉：不碰云端")
+local2 = FakeBackend()
+cloud2 = FakeBackend()
+cloud2.name = "cloud"
+cloud2.configured = True
+runner.make_backend = lambda kind, config: cloud2 if kind == "cloud" else local2
+runner.make_judge = lambda *a, **k: make_judge([(False, ["garment_applied"])] * 5)
+tmp = tempfile.mkdtemp()
+config = {
+    "backend": "fake", "prep": {"enabled": False},
+    "sampling": {"cfg": 1.0, "steps": 40, "resolution": 1024},
+    "pipeline": {"max_attempts": 2, "escape_attempts": 1, "escape_cfg": 2.0,
+                 "cloud_fallback": False},
+    "paths": {"runs": os.path.join(tmp, "runs"), "outputs": os.path.join(tmp, "out")},
+}
+job = new_job("person.png", [{"name": "g.jpg", "path": "g.jpg"}], BASE, "", config)
+runner.run_job(job, config)
+check("关掉时不碰云端", len(cloud2.requests) == 0, str(len(cloud2.requests)))
+check("本地照旧跑 3 次", len(local2.requests) == 3, str(len(local2.requests)))
 
 print("\n" + ("全部通过" if not FAILED else f"{len(FAILED)} 项失败"))
 sys.exit(1 if FAILED else 0)

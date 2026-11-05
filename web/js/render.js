@@ -236,6 +236,7 @@ function renderDocket(c) {
       `首轮 ${pct(m.first_pass_rate)}`,
       `平均重试 ${m.avg_attempts}`,
       `平均生成 ${m.avg_generate_s}s`,
+      m.cloud_attempts ? `云端兜底 ${m.cloud_attempts} 次` : '',
       m.total_cost ? `本次 ${money(m.total_cost, m.cost_currency)}` : '',
     ].filter(Boolean).join(' · ');
     body.append(line);

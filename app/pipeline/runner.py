@@ -32,6 +32,16 @@ def run_job(job, config):
     backend = make_backend(app_config.backend(config), config)
     judge = make_judge(config)
 
+    # 本地全轮不过时，可以再让云端试一次（要配好 cloud、且当前不是云端）
+    cloud_backend = None
+    if bool(pipeline_cfg["cloud_fallback"]) and backend.name != "cloud":
+        try:
+            cand = make_backend("cloud", config)
+            if getattr(cand, "configured", False):
+                cloud_backend = cand
+        except Exception:
+            traceback.print_exc()
+
     job.state = "running"
     store.append(job.id, {"stage": "job_start", "job": job.id,
                           "person": job.person_path,
@@ -40,7 +50,8 @@ def run_job(job, config):
                           "prep": do_prep, "prep_mode": prep_mode,
                           "max_attempts": max_attempts,
                           "escape_attempts": pipeline_cfg["escape_attempts"],
-                          "escape_cfg": escape_cfg})
+                          "escape_cfg": escape_cfg,
+                          "cloud_fallback": cloud_backend is not None})
 
     for case, garment in zip(job.cases, job.garments):
         if job.cancel_requested:
@@ -50,7 +61,8 @@ def run_job(job, config):
         ref_path = _prepare(job, case, garment, store, prep_dir, prep_mode,
                             models_dir, do_prep, prep_cfg["device"])
         tried = _run_attempts(job, case, ref_path, store, backend, judge,
-                              sampling, max_attempts, total_attempts, escape_cfg)
+                              sampling, max_attempts, total_attempts, escape_cfg,
+                              cloud_backend=cloud_backend)
 
         idx = select.best(tried)
         if idx < 0:
@@ -97,8 +109,11 @@ def _prepare(job, case, garment, store, prep_dir, prep_mode, models_dir, do_prep
 
 
 def _run_attempts(job, case, ref_path, store, backend, judge, sampling,
-                  max_attempts, total_attempts, escape_cfg):
-    """跑这件衣服的所有轮次，返回每次成功生成的 [(attempt, gen, verdict)]。"""
+                  max_attempts, total_attempts, escape_cfg, cloud_backend=None):
+    """跑这件衣服的所有轮次，返回每次成功生成的 [(attempt, gen, verdict)]。
+
+    本地全轮都没过时，如果配了 cloud_fallback，再让云端跑一次（记为 cloud-fallback）。
+    只加一次：云端按张收费，不能无限重试。"""
     tried = []
     refined = job.instruction
 
@@ -183,5 +198,54 @@ def _run_attempts(job, case, ref_path, store, backend, judge, sampling,
         store.append(job.id, {"stage": "refine", "case": case["index"],
                               "attempt": attempt, "added": list(decision.clauses),
                               **({"reason": decision.reason} if decision.reason else {})})
+
+    # 本地全轮不过 → 云端兜一次（放在这里而不是 policy 里：它不参与"要不要重试"的判断）
+    if (cloud_backend is not None and tried
+            and not any(t["verdict"]["passed"] for t in tried)
+            and not job.cancel_requested):
+        attempt = total_attempts + 1
+        case["attempts_used"] = attempt
+        mode = "cloud-fallback"
+        req = GenRequest(
+            person_path=job.person_path,
+            garment_path=ref_path,
+            instruction=refined,
+            negative=job.negative,
+            cfg=sampling["cfg"],
+            steps=sampling["steps"],
+            resolution=sampling["resolution"],
+            seed=None,
+            prefix=f"{job.id}_c{case['index']}_a{attempt}",
+        )
+        try:
+            gen = cloud_backend.generate(req)
+        except Exception as e:
+            traceback.print_exc()
+            gen = None
+            job.error = f"{type(e).__name__}: {e}"
+        if gen is None or not gen.ok:
+            store.append(job.id, {"stage": "generate", "case": case["index"],
+                                  "attempt": attempt, "garment": case["garment"],
+                                  "ok": False, "mode": mode, "error": job.error,
+                                  "error_kind": getattr(gen, "error_kind", "exception")})
+            return tried
+        grec = {"stage": "generate", "case": case["index"], "attempt": attempt,
+                "garment": case["garment"], "ok": True, "mode": mode,
+                "cfg": req.cfg, "instruction_used": req.instruction,
+                "latency_s": round(gen.latency_s, 2), "backend": gen.backend,
+                "model": gen.model, "seed": gen.seed, "cost": gen.cost,
+                "image": gen.image_path, "meta": gen.meta}
+        case["attempts"].append(grec)
+        store.append(job.id, grec)
+        verdict = judge(job.person_path, gen.image_path, ref_path)
+        jrec = {"stage": "judge", "case": case["index"], "attempt": attempt,
+                "garment": case["garment"], "mode": mode,
+                "judge_mode": verdict["mode"], "passed": verdict["passed"],
+                "score": verdict["score"], "failures": verdict["failures"],
+                "checks": verdict["checks"], "latency_s": verdict["latency_s"],
+                "note": verdict["note"]}
+        case["attempts"].append(jrec)
+        store.append(job.id, jrec)
+        tried.append({"attempt": attempt, "gen": gen, "verdict": verdict})
 
     return tried

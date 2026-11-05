@@ -63,6 +63,8 @@ def compute_metrics(cases, judge_mode, cost_currency="USD"):
 
     escapes = sum(1 for c in cases for a in c.get("attempts", [])
                   if a.get("stage") == "generate" and a.get("mode") == "escape")
+    clouds = sum(1 for c in cases for a in c.get("attempts", [])
+                 if a.get("stage") == "generate" and a.get("mode") == "cloud-fallback")
 
     return {
         "cases": total,
@@ -70,6 +72,7 @@ def compute_metrics(cases, judge_mode, cost_currency="USD"):
         "final_pass_rate": round(final_pass / total, 3) if total else 0,
         "avg_attempts": round(sum(attempts) / len(attempts), 2) if attempts else 0,
         "escape_attempts": escapes,
+        "cloud_attempts": clouds,
         "avg_generate_s": round(sum(latencies) / len(latencies), 1) if latencies else 0,
         "total_generate_s": round(sum(latencies), 1),
         "total_cost": round(sum(paid), 4),

@@ -36,6 +36,7 @@ DEFAULTS = {
         "max_attempts": 2,        # 普通轮次：第一次原样，之后追加修正约束
         "escape_attempts": 1,     # 降级轮：指令退回原文 + 抬 cfg
         "escape_cfg": 2.0,        # cfg=1 时负向提示词不生效，抬起来才有意义
+        "cloud_fallback": False,  # 本地全不过时，自动再用云端试一次（要配好 cloud）
     },
     "sampling": {
         "cfg": 1.0, "steps": 40, "resolution": 1024,
