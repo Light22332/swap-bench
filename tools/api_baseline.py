@@ -62,8 +62,20 @@ def call(method, path, body=None):
 
 def newest_job():
     runs = os.path.join(ROOT, "runs")
-    files = sorted(f[:-6] for f in os.listdir(runs) if f.endswith(".jsonl")) if os.path.isdir(runs) else []
-    return files[-1] if files else "none"
+    if not os.path.isdir(runs):
+        return "none"
+    good = []
+    for name in sorted(os.listdir(runs)):
+        if not name.endswith(".jsonl"):
+            continue
+        path = os.path.join(runs, name)
+        try:
+            with open(path, encoding="utf-8") as f:
+                if any('"job_end"' in line for line in f):
+                    good.append(name[:-6])
+        except OSError:
+            continue
+    return good[0] if good else "none"  # 用最早的完整任务：重启后它一定走"从 JSONL 还原"的稳定形状
 
 
 def probes():

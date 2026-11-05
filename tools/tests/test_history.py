@@ -127,7 +127,10 @@ def main():
     check("有 cancel 事件且跑完的单子 state=cancelled",
           cancel and cancel["state"] == "cancelled", str(cancel and cancel["state"]))
 
-    check("只有 job_start 的残片返回 None", history.load_job("empty1") is None)
+    empty = history.load_job("empty1")
+    check("只有 job_start 的残片返回 interrupted 空记录",
+          empty is not None and empty["state"] == "interrupted" and empty["cases"] == [],
+          str(empty and empty["state"]))
     check("不存在的单子返回 None", history.load_job("nope") is None)
 
     jobs = history.list_jobs()

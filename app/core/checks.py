@@ -21,7 +21,7 @@ CHECKS = [
     },
     {
         "key": "garment_applied", "label": "衣服换上了", "critical": True, "weight": 2.0,
-        "fix": "必须把图1身上的衣服替换成图2的款式和颜色",
+        "fix": "必须把图1身上的衣服整套替换成图2的款式和颜色；原图旧衣服不能残留（袖子、下摆、里层都算），不要两件衣服叠穿",
     },
     {
         "key": "hand_preserved", "label": "手还在", "critical": True, "weight": 2.0,

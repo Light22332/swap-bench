@@ -87,7 +87,15 @@ def load_job(jid):
                                 "note": r.get("note", "")}
 
     if not cases:
-        return None
+        # 进程在 prep 阶段就被杀：没有 case 可还原，但 job_start 还在——别让 ?job= 链接 404，
+        # 返回一单"中断了、没有图"的记录。
+        if not any(r.get("stage") == "job_start" for r in recs):
+            return None
+        person = next((r.get("person") for r in recs if r.get("stage") == "job_start"), None)
+        final_state = "cancelled" if any(r.get("stage") == "cancel" for r in recs) else "interrupted"
+        return {"id": jid, "state": final_state,
+                "elapsed_s": float(_elapsed_from_ts(recs)), "judge_mode": "rules",
+                "person": person, "cases": [], "metrics": {}, "error": None, "replayed": True}
 
     # 选中的不一定是最后一次：以前这里是"最后一张生成图"，会把挑回来的那张显示错
     for idx, attempt in picked.items():

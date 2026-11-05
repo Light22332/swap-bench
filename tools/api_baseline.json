@@ -80,11 +80,11 @@
               "model": "str",
               "ok": "bool",
               "seed": "int",
-              "stage": "str"
+              "stage": "str",
+              "ts": "str"
             }
           ],
           "attempts_used": "int",
-          "chosen_attempt": "int",
           "final_image": "str",
           "final_url": "str",
           "first_attempt_passed": "bool",
@@ -92,26 +92,6 @@
           "index": "int",
           "instruction_used": "str",
           "passed": "bool",
-          "prep": {
-            "extract_share": "float",
-            "extract_size": [
-              "int"
-            ],
-            "from": [
-              "int"
-            ],
-            "how": "str",
-            "labels": {
-              "上衣": "float",
-              "右臂": "float",
-              "头发": "float",
-              "左臂": "float",
-              "背景": "float",
-              "裙子": "float",
-              "裤子": "float"
-            },
-            "share": "float"
-          },
           "state": "str",
           "verdict": {
             "checks": {
@@ -137,15 +117,11 @@
                 "reason": "str"
               }
             },
-            "error": "null",
             "failures": [],
-            "judged": "int",
-            "latency_s": "float",
             "mode": "str",
             "note": "str",
             "passed": "bool",
-            "score": "float",
-            "semantic_checked": "bool"
+            "score": "float"
           }
         }
       ],
@@ -157,17 +133,16 @@
         "avg_attempts": "float",
         "avg_generate_s": "float",
         "cases": "int",
-        "cost_currency": "str",
         "escape_attempts": "int",
         "failure_reasons": {},
         "final_pass_rate": "float",
         "first_pass_rate": "float",
         "judge_mode": "str",
-        "total_cost": "int",
         "total_generate_s": "float"
       },
       "person": "str",
       "person_url": "str",
+      "replayed": "bool",
       "state": "str"
     },
     "status": 200,
@@ -181,14 +156,7 @@
     "type": "json"
   },
   "GET /api/jobs": {
-    "shape": [
-      {
-        "cases": "int",
-        "elapsed_s": "float",
-        "id": "str",
-        "state": "str"
-      }
-    ],
+    "shape": [],
     "status": 200,
     "type": "json"
   },
