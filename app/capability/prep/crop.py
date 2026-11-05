@@ -17,6 +17,9 @@
    外框几乎等于整张图时干脆不裁。
 3. 解析不出（没有模型、或者模型没认出衣服）→ 老办法兜底：
    图里有人脸就按固定比例切（人像照必须切掉头），没人脸就不裁。
+4. 解析出来的衣服太小（< 15%）：多半是整屏截图、大留白的商品图。这时先抠图，
+   用白底的那件衣服当参考——实测直接按框裁会把背景、人、评论区一起塞给模型，
+   模型干脆把原图重画一遍，衣服一件没换。
 
 宁可少裁，也不要裁掉衣服。
 """
@@ -25,7 +28,7 @@ import os
 from PIL import Image
 
 from ...core import photos
-from . import parse_clothes
+from . import extract_garment, parse_clothes
 
 # 第 1 档（固定比例）的参数：左右各去 8%，上去 16%，下去 10%
 LEFT, RIGHT = 0.08, 0.08
@@ -34,6 +37,7 @@ TOP, BOTTOM = 0.16, 0.10
 MIN_SIDE = 160      # 裁完太小就放弃，用原图
 MAX_KEEP = 0.85     # 裁完还剩这么多面积，说明几乎没裁，没必要
 MIN_SHARE = 0.06    # 解析出的衣服至少占画面这么多，才认它是"主体"
+SHARE_SURE = 0.15   # 少于这个数：参考图不可靠，先抠图再当参考
 CUT_OK = 0.05       # 固定框切掉的衣服像素占比不超过这个数，说明盲切没有伤到衣服
 MARGIN = 0.02       # 用衣服外框时四周留一点，别贴着边切
 
@@ -105,6 +109,19 @@ def crop_garment(path, out_dir, mode="parse", models_dir=None, device="cpu"):
                 if k in res:
                     meta[k] = res[k]
             mask = res.get("mask")
+            if res.get("share", 0) < SHARE_SURE:
+                # 衣服在图里太小：整屏截图、大留白商品图、或者"人穿着衣服的全身照"。
+                # 按框裁等于把背景/人/水印一起交给模型，实测模型会原样重画。
+                # 改用抠图白底：只剩衣服，模型才认得出要换的是这件。
+                cut_path, cut_info = extract_garment.extract(path, out_dir, models_dir, device)
+                if cut_path:
+                    meta.update({
+                        "how": "extract",
+                        "extract_share": cut_info.get("share"),
+                        "extract_size": cut_info.get("size"),
+                    })
+                    return cut_path, meta
+                meta["warn"] = "这张衣服图没抠出明确的衣服，结果可能没换上"
             if res["box"] and res["share"] >= MIN_SHARE and mask is not None:
                 total = float(mask.sum())
                 outside = mask.copy()

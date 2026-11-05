@@ -162,6 +162,29 @@ finally:
     core_photos.open_upright = _orig_open
 check("两张图各只解码一次", len(opened) == 2, f"opened={len(opened)}")
 
+print("防误判：重绘了一遍但衣服没换")
+person = canvas(body=(150, 150, 150))
+p_person2 = save(person, "retouch-person.png")
+retouch = canvas(body=(150, 150, 150))
+dr = ImageDraw.Draw(retouch)
+w, h = retouch.size
+x0, y0, x1, y1 = int(w * 0.25), int(h * 0.40), int(w * 0.75), int(h * 0.90)
+for yy in range(y0, y1, 32):
+    for xx in range(x0, x1, 32):
+        delta = 15 if ((xx // 32) + (yy // 32)) % 2 else -15
+        dr.rectangle([xx, yy, xx + 31, yy + 31], fill=(150 + delta,) * 3)
+p_retouch = save(retouch, "retouch-result.png")
+p_red = save(Image.new("RGB", (256, 320), (200, 30, 30)), "garment-red.png")
+v = rules.evaluate(p_person2, p_retouch, garment_path=p_red)
+ch = v["checks"]["garment_applied"]
+check("重绘但颜色没变 → 不判通过", ch["pass"] is False, ch["reason"])
+check("理由点出「重绘」", "重绘" in ch["reason"], ch["reason"])
+check("整单跟着不过", v["passed"] is False)
+v2 = rules.evaluate(p_person2, save(canvas(body=(200, 30, 30)), "swapped-red.png"),
+                    garment_path=p_red)
+check("真换成红衣服 → 通过", v2["checks"]["garment_applied"]["pass"] is True,
+      v2["checks"]["garment_applied"]["reason"])
+
 print()
 if FAILED:
     print(f"{len(FAILED)} 项没过：" + "、".join(FAILED))

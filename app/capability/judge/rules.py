@@ -27,6 +27,7 @@ FLAT_STD = 10.0
 CHANGE_TH = 12.0
 BG_COLOR_MAX = 30.0        # 背景主色距离上限
 BODY_CHANGED_MIN = 0.20    # 身体区域变化块比例下限
+HIST_NEAR = 0.03           # 身体颜色分布几乎没变 → 只是重绘，衣服没换（实测 0.006 vs 真换 ≥0.06）
 FACE_SIM_MIN = 0.45        # 人脸相似度下限（实测：对 0.75+，错 0.00~0.19）
 
 
@@ -40,6 +41,30 @@ def _prep_image(im):
 def _prep(path):
     """读文件再缩到判定尺寸。留一个按路径的入口，测试和临时排查用。"""
     return _prep_image(photos.open_upright(path))
+
+
+BODY_ROWS = (0.35, 0.95)   # 身体区域（和 _body_changed 用同一块）
+BODY_COLS = (0.15, 0.85)
+
+
+def _body_hist(im):
+    """身体区域的颜色分布（6×6×6 归一化直方图）。改明暗几乎不动，换衣服会明显散开。"""
+    w, h = im.size
+    box = (int(w * BODY_COLS[0]), int(h * BODY_ROWS[0]),
+           int(w * BODY_COLS[1]), int(h * BODY_ROWS[1]))
+    crop = im.crop(box).convert("RGB").resize((64, 64), Image.LANCZOS)
+    hist = {}
+    n = crop.width * crop.height
+    for r, g, b in crop.getdata():
+        key = (r * 6 // 256, g * 6 // 256, b * 6 // 256)
+        hist[key] = hist.get(key, 0) + 1
+    return {k: v / n for k, v in hist.items()}
+
+
+def _hist_dist(a, b):
+    """两个颜色分布的卡方距离；0 表示分布一模一样。"""
+    return sum((a.get(k, 0) - b.get(k, 0)) ** 2 / (a.get(k, 0) + b.get(k, 0) + 1e-9)
+               for k in set(a) | set(b))
 
 
 def _blocks(im):
@@ -141,10 +166,19 @@ def evaluate(person_path, result_path, garment_path=None, models_dir=None, **_):
 
     # ---- 衣服 ----
     changed = _body_changed(p, r)
-    checks["garment_applied"] = {
-        "pass": changed >= BODY_CHANGED_MIN,
-        "reason": f"身体区域变化 {changed * 100:.0f}%",
-    }
+    applied = changed >= BODY_CHANGED_MIN
+    reason = f"身体区域变化 {changed * 100:.0f}%"
+    if applied:
+        # 只看"像素动没动"会被重绘骗过：质量差的参考图会让模型把原图重画一遍，
+        # 身体区域照样能报 30%+ 变化，但衣服一件没换。再看身体的颜色分布：
+        # 重绘只改明暗/锐度，分布几乎不动（实测 0.006）；真换一件（哪怕同色系）
+        # 分布会明显散开（实测最低 0.06）。卡在 0.03。
+        hd = _hist_dist(_body_hist(p), _body_hist(r))
+        if hd < HIST_NEAR:
+            applied = False
+            reason = (f"身体区域变化 {changed * 100:.0f}%，但衣服的颜色分布几乎没变"
+                      f"（差 {hd:.3f}）——只是重绘，衣服没换成图2")
+    checks["garment_applied"] = {"pass": applied, "reason": reason}
 
     # ---- 手 ----
     if models_dir and hands.load(models_dir):

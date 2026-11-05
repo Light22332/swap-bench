@@ -34,11 +34,9 @@
     "type": "json"
   },
   "GET /api/export?job=": {
-    "shape": {
-      "error": "str"
-    },
-    "status": 404,
-    "type": "json"
+    "shape": "binary",
+    "status": 200,
+    "type": "application/zip"
   },
   "GET /api/history": {
     "shape": [
@@ -65,25 +63,90 @@
           "attempts": [
             {
               "attempt": "int",
+              "backend": "str",
               "case": "int",
-              "error": "null",
-              "error_kind": "str",
+              "cfg": "float",
+              "cost": "float",
               "garment": "str",
+              "image": "str",
+              "image_url": "str",
+              "instruction_used": "str",
+              "latency_s": "float",
+              "meta": {
+                "prompt_id": "str",
+                "queue_s": "float"
+              },
+              "mode": "str",
+              "model": "str",
               "ok": "bool",
-              "stage": "str",
-              "ts": "str"
+              "seed": "int",
+              "stage": "str"
             }
           ],
           "attempts_used": "int",
-          "final_image": "null",
-          "final_url": "null",
+          "chosen_attempt": "int",
+          "final_image": "str",
+          "final_url": "str",
           "first_attempt_passed": "bool",
           "garment": "str",
           "index": "int",
           "instruction_used": "str",
           "passed": "bool",
+          "prep": {
+            "extract_share": "float",
+            "extract_size": [
+              "int"
+            ],
+            "from": [
+              "int"
+            ],
+            "how": "str",
+            "labels": {
+              "上衣": "float",
+              "右臂": "float",
+              "头发": "float",
+              "左臂": "float",
+              "背景": "float",
+              "裙子": "float",
+              "裤子": "float"
+            },
+            "share": "float"
+          },
           "state": "str",
-          "verdict": "null"
+          "verdict": {
+            "checks": {
+              "background_preserved": {
+                "pass": "bool",
+                "reason": "str"
+              },
+              "face_preserved": {
+                "pass": "bool",
+                "reason": "str",
+                "sim": "float"
+              },
+              "garment_applied": {
+                "pass": "bool",
+                "reason": "str"
+              },
+              "hand_preserved": {
+                "pass": "bool",
+                "reason": "str"
+              },
+              "no_extra_person": {
+                "pass": "bool",
+                "reason": "str"
+              }
+            },
+            "error": "null",
+            "failures": [],
+            "judged": "int",
+            "latency_s": "float",
+            "mode": "str",
+            "note": "str",
+            "passed": "bool",
+            "score": "float",
+            "semantic_checked": "bool"
+          }
         }
       ],
       "elapsed_s": "float",
@@ -94,15 +157,17 @@
         "avg_attempts": "float",
         "avg_generate_s": "float",
         "cases": "int",
+        "cost_currency": "str",
+        "escape_attempts": "int",
         "failure_reasons": {},
         "final_pass_rate": "float",
         "first_pass_rate": "float",
         "judge_mode": "str",
-        "total_generate_s": "int"
+        "total_cost": "int",
+        "total_generate_s": "float"
       },
       "person": "str",
       "person_url": "str",
-      "replayed": "bool",
       "state": "str"
     },
     "status": 200,
