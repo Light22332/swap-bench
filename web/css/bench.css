@@ -94,6 +94,10 @@
   width: 100%;
   height: auto;
   display: block;
+  /* 手机上按住看原图时，别让系统长按菜单/拖动把对比抢走 */
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+  user-select: none;
 }
 
 .cell-no {
